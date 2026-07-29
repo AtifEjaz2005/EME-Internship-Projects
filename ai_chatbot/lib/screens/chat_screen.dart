@@ -64,10 +64,9 @@ class _ChatScreenState extends State<ChatScreen> {
             ChatInputArea(
               controller: logic.messageController,
               isTyping: logic.isTyping,
-              onSend: () => logic.handleSendMessage(
-                dbService: dbService,
-                updateUI: () => setState(() {}),
-              ),
+              isListening: logic.isListening,
+              onSend: () => logic.handleSendMessage(dbService: dbService, updateUI: () => setState(() {})),
+              onMicTap: () => logic.toggleVoiceTyping(() => setState(() {})),
             ),
           ],
         ),

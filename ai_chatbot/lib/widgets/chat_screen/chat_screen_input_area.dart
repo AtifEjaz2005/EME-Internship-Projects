@@ -5,12 +5,16 @@ class ChatInputArea extends StatelessWidget {
   final TextEditingController controller;
   final bool isTyping;
   final VoidCallback onSend;
+  final bool isListening;
+  final VoidCallback onMicTap;
 
   const ChatInputArea({
     super.key,
     required this.controller,
     required this.isTyping,
-    required this.onSend
+    required this.onSend,
+    required this.isListening,
+    required this.onMicTap,
   });
 
   @override
@@ -22,7 +26,11 @@ class ChatInputArea extends StatelessWidget {
           color: AppTheme.darkBackground,
           borderRadius: BorderRadius.circular(35),
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Row(
@@ -35,10 +43,27 @@ class ChatInputArea extends StatelessWidget {
                   hintText: "Ask anything...",
                   hintStyle: TextStyle(color: Colors.white54),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 25,
+                    vertical: 15,
+                  ),
                 ),
               ),
             ),
+            
+             // --- THE MIC ICON BUTTON ---
+            IconButton(
+              onPressed: onMicTap,
+              icon: Icon(
+                isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                // Turn red when listening so user knows it's recording
+                color: isListening ? Colors.redAccent : Colors.white54,
+                size: 28,
+              ),
+            ),
+
+
+            const SizedBox(width: 5),
             IconButton(
               onPressed: onSend,
               icon: Icon(

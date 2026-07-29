@@ -100,4 +100,18 @@ class DatabaseService {
         .orderBy('timestamp')
         .snapshots();
   }
+
+  // Add this inside your DatabaseService class
+Future<List<QueryDocumentSnapshot>> getMessagesOnce(String chatId) async {
+  var snapshot = await _db
+      .collection('users')
+      .doc(uid)
+      .collection('chats')
+      .doc(chatId)
+      .collection('messages')
+      .orderBy('timestamp')
+      .get();
+
+  return snapshot.docs;
+}
 }
