@@ -20,7 +20,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ChatScreenLogic logic = ChatScreenLogic();
   late DatabaseService dbService;
 
-// to get the repective user chats and display random questions on the screen
+  // to get the repective user chats and display random questions on the screen
   @override
   void initState() {
     super.initState();
@@ -53,7 +53,14 @@ class _ChatScreenState extends State<ChatScreen> {
                       chatId: logic.currentChatId!,
                       dbService: dbService,
                       scrollController: logic.scrollController,
-                      onNewMessage: () => logic.scrollToBottom(),
+                      logic: logic,
+                      currentlySpeakingText: logic.currentlySpeakingText,
+                      onNewMessage: () {
+                        logic.scrollToBottom();
+                      },
+                      refreshIcon: (){
+                        setState(() {});
+                      },
                     ),
             ),
 
@@ -65,8 +72,12 @@ class _ChatScreenState extends State<ChatScreen> {
               controller: logic.messageController,
               isTyping: logic.isTyping,
               isListening: logic.isListening,
-              onSend: () => logic.handleSendMessage(dbService: dbService, updateUI: () => setState(() {})),
+              onSend: () => logic.handleSendMessage(
+                dbService: dbService,
+                updateUI: () => setState(() {}),
+              ),
               onMicTap: () => logic.toggleVoiceTyping(() => setState(() {})),
+              onChanged: (text) => setState(() {}), 
             ),
           ],
         ),
@@ -103,7 +114,8 @@ class _ChatScreenState extends State<ChatScreen> {
       // this will logout the user and r => false will delete all the screens from stack so that user cannot login back without going to login page
       onLogout: () async {
         await AuthService.instance.signOut();
-        Navigator.pushAndRemoveUntil(   // this will remove the screens until get to the login page from stack
+        Navigator.pushAndRemoveUntil(
+          // this will remove the screens until get to the login page from stack
           context,
           MaterialPageRoute(builder: (c) => const LoginScreen()),
           (r) => false,

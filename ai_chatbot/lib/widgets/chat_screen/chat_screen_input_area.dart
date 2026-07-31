@@ -7,6 +7,7 @@ class ChatInputArea extends StatelessWidget {
   final VoidCallback onSend;
   final bool isListening;
   final VoidCallback onMicTap;
+  final Function(String) onChanged;
 
   const ChatInputArea({
     super.key,
@@ -15,10 +16,14 @@ class ChatInputArea extends StatelessWidget {
     required this.onSend,
     required this.isListening,
     required this.onMicTap,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Check if there is currently text in the box
+    bool hasText = controller.text.trim().isNotEmpty;
+
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15, bottom: 15, top: 10),
       child: Container(
@@ -34,42 +39,63 @@ class ChatInputArea extends StatelessWidget {
           ],
         ),
         child: Row(
+          // Pushes buttons to the bottom of the 2nd line when expanded
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               child: TextField(
                 controller: controller,
-                style: const TextStyle(color: Colors.white),
-                decoration: const InputDecoration(
-                  hintText: "Ask anything...",
-                  hintStyle: TextStyle(color: Colors.white54),
+                // LOCK 1: Disable typing if we are listening to voice
+                enabled: !isListening,
+                onChanged: onChanged,
+                minLines: 1,
+                maxLines: 2,
+                style: TextStyle(
+                  // Dim the text color if the box is locked
+                  color: isListening ? Colors.white38 : Colors.white,
+                ),
+                decoration: InputDecoration(
+                  // Change hint text to explain why it's locked
+                  hintText: isListening ? "Listening..." : "Ask anything...",
+                  hintStyle: const TextStyle(color: Colors.white54),
                   border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 25,
                     vertical: 15,
                   ),
                 ),
               ),
             ),
-            
-             // --- THE MIC ICON BUTTON ---
-            IconButton(
-              onPressed: onMicTap,
-              icon: Icon(
-                isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                // Turn red when listening so user knows it's recording
-                color: isListening ? Colors.redAccent : Colors.white54,
-                size: 28,
-              ),
-            ),
 
+            // Use a small padding to keep icons centered vertically with the text
+            Padding(
+              padding: const EdgeInsets.only(bottom: 5, right: 8),
+              child: Row(
+                children: [
+                  // --- THE MIC ICON BUTTON ---
+                  IconButton(
+                    // LOCK 2: If user typed text, mic becomes unclickable (null)
+                    onPressed: hasText ? null : onMicTap,
+                    icon: Icon(
+                      isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                      // Change color to very dark if disabled (hasText)
+                      color: hasText
+                          ? Colors.white10
+                          : (isListening ? Colors.redAccent : Colors.white54),
+                      size: 26,
+                    ),
+                  ),
 
-            const SizedBox(width: 5),
-            IconButton(
-              onPressed: onSend,
-              icon: Icon(
-                isTyping ? Icons.stop_circle_rounded : Icons.send_rounded,
-                color: isTyping ? Colors.redAccent : AppTheme.limeGreen,
-                size: 32,
+                  // --- THE SEND/STOP BUTTON ---
+                  IconButton(
+                    onPressed: onSend,
+                    icon: Icon(
+                      isTyping ? Icons.stop_circle_rounded : Icons.send_rounded,
+                      color: isTyping ? Colors.redAccent : AppTheme.limeGreen,
+                      size: 32,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

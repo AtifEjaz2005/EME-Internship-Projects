@@ -3,6 +3,7 @@ import '../../database/api_services.dart';
 import '../../database/database_service.dart';
 import '../../models/message.dart';
 import 'package:speech_to_text/speech_to_text.dart'; // 1. Import library
+import 'package:flutter_tts/flutter_tts.dart'; // Import TTS
 
 class ChatScreenLogic {
   final TextEditingController messageController = TextEditingController();
@@ -10,6 +11,8 @@ class ChatScreenLogic {
   final ApiService apiService = ApiService();
   final SpeechToText _speechToText = SpeechToText(); // 2. Create the Ear
   bool isListening = false; // 3. Tracks if we are currently recording
+  final FlutterTts _tts = FlutterTts();
+  String? currentlySpeakingText;
 
   bool isTyping = false;
   String? currentChatId;
@@ -41,12 +44,86 @@ class ChatScreenLogic {
     }
   }
 
+  void toggleVoiceTyping(Function updateUI) async {
+    if (!isListening) {
+      bool available = await _speechToText.initialize();
+      if (available) {
+        isListening = true;
+        updateUI();
+
+        _speechToText.listen(
+          onResult: (result) {
+            if (messageController.text != result.recognizedWords) {
+              messageController.text = result.recognizedWords;
+              messageController.selection = TextSelection.fromPosition(
+                TextPosition(offset: messageController.text.length),
+              );
+              updateUI(); // Only refresh if text actually changed
+            }
+          },
+          listenOptions: SpeechListenOptions(
+            partialResults: true,
+            listenMode: ListenMode.dictation,
+          ),
+        );
+      }
+    } else {
+      stopListening(updateUI);
+    }
+  }
+
+  Future<void> toggleSpeak(String text, Function updateUI) async {
+    if (currentlySpeakingText == text) {
+      // 1. STOP: If we click the same bubble, stop the voice
+      await _tts.stop();
+      currentlySpeakingText = null;
+    } else {
+      // 2. START: Stop any previous voice and start new one
+      await _tts.stop();
+      currentlySpeakingText = text;
+      updateUI(); // Refresh icon to "No Line" immediately
+
+      await _tts.speak(text);
+
+      // 3. AUTO-RESET: When text ends, put the "Line" back
+      _tts.setCompletionHandler(() {
+        currentlySpeakingText = null;
+        updateUI();
+      });
+    }
+    updateUI(); // Final refresh to ensure toggle happens
+  }
+
+  // Helper to stop listening cleanly
+  void stopListening(Function updateUI) {
+    isListening = false;
+    _speechToText.stop();
+    updateUI();
+  }
+
+  // 2. READ MESSAGE LOUDLY
+  Future<void> speak(String text) async {
+    await _tts.setLanguage("en-US");
+    await _tts.setPitch(1.0);
+    await _tts.speak(text);
+  }
+
+  // 3. STOP TTS (Optional, if user wants to silence it)
+  Future<void> stopSpeaking() async {
+    await _tts.stop();
+  }
+
   // The logic for sending or stopping a message
   Future<void> handleSendMessage({
     String? text,
     required DatabaseService dbService,
     required Function updateUI,
   }) async {
+    // NEW: If the user is currently speaking (mic is red), stop it first
+    if (isListening) {
+      stopListening(updateUI);
+    }
+
     if (isTyping) {
       apiService.stopResponse();
       isTyping = false;
@@ -57,13 +134,11 @@ class ChatScreenLogic {
     String msgText = text ?? messageController.text.trim();
     if (msgText.isEmpty) return;
 
-    // 1. If it's a new chat, create it first
     if (currentChatId == null) {
       currentChatId = await dbService.createNewChat();
       await dbService.updateChatTitle(currentChatId!, msgText);
     }
 
-    // 2. Save your new message to the database
     Message userMsg = Message(text: msgText, isUser: true);
     messageController.clear();
     await dbService.saveMessage(currentChatId!, userMsg);
@@ -71,21 +146,14 @@ class ChatScreenLogic {
     isTyping = true;
     updateUI();
 
-    // --- THE FIX STARTS HERE ---
-
-    // 3. FETCH THE CONVERSATION HISTORY
-    // We go to the database and grab all previous messages so the AI has "Memory"
+    // Context Fix: Fetch full history so the AI remembers past jokes/topics
     var messageDocs = await dbService.getMessagesOnce(currentChatId!);
 
-    // Convert those database records into a List of Message objects
     List<Message> history = messageDocs.map((doc) {
       return Message(text: doc['text'], isUser: doc['isUser']);
     }).toList();
 
-    // 4. SEND THE FULL HISTORY TO THE AI
     String response = await apiService.sendMessage(history);
-
-    // --- THE FIX ENDS HERE ---
 
     if (response != "Request stopped." && isTyping) {
       await dbService.saveMessage(
@@ -95,31 +163,6 @@ class ChatScreenLogic {
     }
 
     isTyping = false;
-    updateUI();
-  }
-
-  // 4. Function to start listening
-  void toggleVoiceTyping(Function updateUI) async {
-    if (!isListening) {
-      // Try to turn on the "Ear"
-      bool available = await _speechToText.initialize();
-      if (available) {
-        isListening = true;
-        updateUI(); // Show red mic in UI
-
-        _speechToText.listen(
-          onResult: (result) {
-            // Put the spoken words into the text box
-            messageController.text = result.recognizedWords;
-            updateUI();
-          },
-        );
-      }
-    } else {
-      // If already listening, turn it off
-      isListening = false;
-      _speechToText.stop();
-      updateUI(); // Show normal mic in UI
-    }
+    updateUI(); // This ensures the Send button turns green again
   }
 }

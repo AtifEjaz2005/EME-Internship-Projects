@@ -36,8 +36,8 @@ dependencies:
   firebase_auth: ^5.1.2 # Updated
   cloud_firestore: ^5.0.2
   flutter_markdown: ^0.7.3
-  speech_to_text: ^6.6.2
-
+  speech_to_text: ^7.0.0
+  flutter_tts: ^4.0.2
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
