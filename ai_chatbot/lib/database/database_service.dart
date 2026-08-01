@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/message.dart';
-
+import 'package:ai_chatbot/models/onboarding_model.dart';
 class DatabaseService {
   final String uid;
   DatabaseService({required this.uid});
@@ -102,16 +102,24 @@ class DatabaseService {
   }
 
   // Add this inside your DatabaseService class
-Future<List<QueryDocumentSnapshot>> getMessagesOnce(String chatId) async {
-  var snapshot = await _db
-      .collection('users')
-      .doc(uid)
-      .collection('chats')
-      .doc(chatId)
-      .collection('messages')
-      .orderBy('timestamp')
-      .get();
+  Future<List<QueryDocumentSnapshot>> getMessagesOnce(String chatId) async {
+    var snapshot = await _db
+        .collection('users')
+        .doc(uid)
+        .collection('chats')
+        .doc(chatId)
+        .collection('messages')
+        .orderBy('timestamp')
+        .get();
 
-  return snapshot.docs;
-}
+    return snapshot.docs;
+  }
+
+  Future<void> saveOnboarding(OnboardingModel data) async {
+    try {
+      await _db.collection('users').doc(uid).update(data.toMap());
+    } catch (e) {
+      print("Error saving onboarding data: $e");
+    }
+  }
 }
