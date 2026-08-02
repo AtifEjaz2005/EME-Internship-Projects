@@ -104,19 +104,24 @@ class _OnboardingMainState extends State<OnboardingMain> {
     );
   }
 
-  Widget _buildHeader() => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(
-        "Step $currentStep of 5",
-        style: const TextStyle(color: AppTheme.limeGreen),
-      ),
-      TextButton(
-        onPressed: next,
-        child: const Text("Skip", style: TextStyle(color: Colors.white38)),
-      ),
-    ],
-  );
+  Widget _buildHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          "Step $currentStep of 5",
+          style: const TextStyle(color: AppTheme.limeGreen),
+        ),
+
+        // ONLY SHOW SKIP IF NOT ON THE LAST STEP
+        if (currentStep < 5)
+          TextButton(
+            onPressed: next,
+            child: const Text("Skip", style: TextStyle(color: Colors.white38)),
+          ),
+      ],
+    );
+  }
 
   Widget _buildNavButtons() => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -140,9 +145,12 @@ class _OnboardingMainState extends State<OnboardingMain> {
   );
 
   void _finish() async {
+    // 1. Save all the data + set 'hasCompletedOnboarding' to true
     await DatabaseService(
       uid: AuthService.instance.currentUserId,
     ).saveOnboarding(userData);
+
+    // 2. Move to Chat Screen
     if (mounted) {
       Navigator.pushReplacement(
         context,

@@ -4,6 +4,8 @@ import '../../database/database_service.dart';
 import '../../models/message.dart';
 import 'package:speech_to_text/speech_to_text.dart'; // 1. Import library
 import 'package:flutter_tts/flutter_tts.dart'; // Import TTS
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class ChatScreenLogic {
   final TextEditingController messageController = TextEditingController();
@@ -119,10 +121,7 @@ class ChatScreenLogic {
     required DatabaseService dbService,
     required Function updateUI,
   }) async {
-    // NEW: If the user is currently speaking (mic is red), stop it first
-    if (isListening) {
-      stopListening(updateUI);
-    }
+    if (isListening) stopListening(updateUI);
 
     if (isTyping) {
       apiService.stopResponse();
@@ -139,21 +138,45 @@ class ChatScreenLogic {
       await dbService.updateChatTitle(currentChatId!, msgText);
     }
 
-    Message userMsg = Message(text: msgText, isUser: true);
+    // Save user message to database
+    await dbService.saveMessage(
+      currentChatId!,
+      Message(text: msgText, isUser: true),
+    );
     messageController.clear();
-    await dbService.saveMessage(currentChatId!, userMsg);
-
     isTyping = true;
     updateUI();
 
-    // Context Fix: Fetch full history so the AI remembers past jokes/topics
+    // --- THE AI MEMORY FIX ---
+
+    // 1. Get user profile (Age, Status, Interests, etc.)
+    var userSnap = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(dbService.uid)
+        .get();
+    var u = userSnap.data() as Map<String, dynamic>;
+
+    // 2. Create the "Context Instruction"
+    String contextPrompt =
+        "You are NEXA, a helpful assistant. "
+        "User Profile: ${u['status']} aged ${u['age']} from ${u['country']}. "
+        "Interests: ${u['interests']}. Goals: ${u['goals']}. "
+        "Always answer in a way that matches this background.";
+
+    // 3. Get chat history
     var messageDocs = await dbService.getMessagesOnce(currentChatId!);
+    List<Message> history = messageDocs
+        .map((doc) => Message(text: doc['text'], isUser: doc['isUser']))
+        .toList();
 
-    List<Message> history = messageDocs.map((doc) {
-      return Message(text: doc['text'], isUser: doc['isUser']);
-    }).toList();
+    // 4. Prepend the memory instruction so the AI reads it first
+    List<Message> fullContext = [
+      Message(text: contextPrompt, isUser: false),
+      ...history,
+    ];
 
-    String response = await apiService.sendMessage(history);
+    // 5. Send everything to AI
+    String response = await apiService.sendMessage(fullContext);
 
     if (response != "Request stopped." && isTyping) {
       await dbService.saveMessage(
@@ -163,6 +186,6 @@ class ChatScreenLogic {
     }
 
     isTyping = false;
-    updateUI(); // This ensures the Send button turns green again
+    updateUI();
   }
 }

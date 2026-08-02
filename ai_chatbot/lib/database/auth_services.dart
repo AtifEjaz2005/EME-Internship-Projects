@@ -28,33 +28,40 @@ class AuthService {
 
   // 3. Register User & Save Profile Details
   Future<User?> register(
-    String email,
-    String password,
-    String firstName,
-    String lastName,
-    String phone,
-  ) async {
-    try {
-      // Create account in Firebase Auth
-      var result = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password.trim(),
-      );
+  String email,
+  String password,
+  String firstName,
+  String lastName,
+  String phone,
+) async {
+  try {
+    // 1. Create the account
+    var result = await _auth.createUserWithEmailAndPassword(
+      email: email.trim(),
+      password: password.trim(),
+    );
 
-      User? user = result.user;
-      // Save user details to Firestore Database
-      if (user != null) {
-        await _db.collection('users').doc(user.uid).set({
-          'firstName': firstName, 'lastName': lastName, 'phone': phone, 'email': email.trim(), 'uid': user.uid, 'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
+    User? user = result.user;
 
-      return user;
-    } catch (e) {
-      print("Registration Error: $e");
-      return null;
+    // 2. Save their profile as "Incomplete"
+    if (user != null) {
+      await _db.collection('users').doc(user.uid).set({
+        'firstName': firstName,
+        'lastName': lastName,
+        'phone': phone,
+        'email': email.trim(),
+        'uid': user.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+        'hasCompletedOnboarding': false // They haven't done the tour yet
+      });
     }
+
+    return user;
+  } catch (e) {
+    print("Registration Error: $e");
+    return null;
   }
+}
 
   // 4. Send Password Reset Email
   Future<bool> resetPassword(String email) async {

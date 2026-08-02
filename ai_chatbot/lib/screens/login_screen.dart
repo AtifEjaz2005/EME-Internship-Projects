@@ -5,7 +5,6 @@ import '../themes/app_theme.dart';
 import 'package:ai_chatbot/widgets/login/login_form_widget.dart';
 import 'package:ai_chatbot/widgets/login/forget_password_form.dart';
 import 'register_screen.dart';
-import 'chat_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,7 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Text("Login", style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white)),
                     const SizedBox(height: 35),
 
-                    LoginField(controller: logic.nameController, hint: "Name", icon: Icons.person),
                     LoginField(controller: logic.emailController, hint: "Email", icon: Icons.email),
                     LoginField(controller: logic.passController, hint: "Password", icon: Icons.lock, isPass: true),
 
@@ -54,7 +52,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               onPressed: () => logic.performLogin(
                                 context: context,
                                 updateUI: () => setState(() {}),
-                                goToChat: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (c) => const ChatScreen())),
                               ),
                               child: const Text("LOGIN", style: TextStyle(color: AppTheme.darkBackground, fontWeight: FontWeight.bold)),
                             ),

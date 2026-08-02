@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/message.dart';
 import 'package:ai_chatbot/models/onboarding_model.dart';
+
 class DatabaseService {
   final String uid;
   DatabaseService({required this.uid});
@@ -121,5 +122,11 @@ class DatabaseService {
     } catch (e) {
       print("Error saving onboarding data: $e");
     }
+  }
+
+  // Add this helper to get user data easily
+  Future<Map<String, dynamic>> getUserData() async {
+    var snap = await _db.collection('users').doc(uid).get();
+    return snap.data() ?? {};
   }
 }
