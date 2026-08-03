@@ -8,6 +8,7 @@ class ChatInputArea extends StatelessWidget {
   final bool isListening;
   final VoidCallback onMicTap;
   final Function(String) onChanged;
+  final bool isPaused;
 
   const ChatInputArea({
     super.key,
@@ -17,6 +18,7 @@ class ChatInputArea extends StatelessWidget {
     required this.isListening,
     required this.onMicTap,
     required this.onChanged,
+    required this.isPaused,
   });
 
   @override
@@ -45,18 +47,16 @@ class ChatInputArea extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
-                // LOCK 1: Disable typing if we are listening to voice
-                enabled: !isListening,
+                enabled: !isListening || isPaused, // Allow editing if paused
                 onChanged: onChanged,
                 minLines: 1,
-                maxLines: 2,
-                style: TextStyle(
-                  // Dim the text color if the box is locked
-                  color: isListening ? Colors.white38 : Colors.white,
-                ),
+                maxLines: 2, // Limit height to 2 lines
+                scrollPadding: EdgeInsets.zero,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  // Change hint text to explain why it's locked
-                  hintText: isListening ? "Listening..." : "Ask anything...",
+                  hintText: isListening
+                      ? (isPaused ? "Paused" : "Listening...")
+                      : "Ask anything...",
                   hintStyle: const TextStyle(color: Colors.white54),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(
@@ -74,15 +74,14 @@ class ChatInputArea extends StatelessWidget {
                 children: [
                   // --- THE MIC ICON BUTTON ---
                   IconButton(
-                    // LOCK 2: If user typed text, mic becomes unclickable (null)
                     onPressed: hasText ? null : onMicTap,
                     icon: Icon(
-                      isListening ? Icons.mic_rounded : Icons.mic_none_rounded,
-                      // Change color to very dark if disabled (hasText)
-                      color: hasText
-                          ? Colors.white10
-                          : (isListening ? Colors.redAccent : Colors.white54),
-                      size: 26,
+                      // THE ICON TOGGLE
+                      !isListening
+                          ? Icons.mic_none_rounded : (isPaused ? Icons.play_arrow_rounded: Icons.pause_rounded), // Resume or Pause
+
+                      color: isListening ? Colors.redAccent : Colors.white54,
+                      size: 28,
                     ),
                   ),
 

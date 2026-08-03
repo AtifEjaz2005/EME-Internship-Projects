@@ -6,7 +6,6 @@ import 'package:speech_to_text/speech_to_text.dart'; // 1. Import library
 import 'package:flutter_tts/flutter_tts.dart'; // Import TTS
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class ChatScreenLogic {
   final TextEditingController messageController = TextEditingController();
   final ScrollController scrollController = ScrollController();
@@ -15,6 +14,8 @@ class ChatScreenLogic {
   bool isListening = false; // 3. Tracks if we are currently recording
   final FlutterTts _tts = FlutterTts();
   String? currentlySpeakingText;
+  bool isPaused = false;
+  String _finalTranscript = ""; // To track if we are in "Pause" mode
 
   bool isTyping = false;
   String? currentChatId;
@@ -47,31 +48,76 @@ class ChatScreenLogic {
   }
 
   void toggleVoiceTyping(Function updateUI) async {
-    if (!isListening) {
-      bool available = await _speechToText.initialize();
-      if (available) {
-        isListening = true;
-        updateUI();
-
-        _speechToText.listen(
-          onResult: (result) {
-            if (messageController.text != result.recognizedWords) {
-              messageController.text = result.recognizedWords;
-              messageController.selection = TextSelection.fromPosition(
-                TextPosition(offset: messageController.text.length),
-              );
-              updateUI(); // Only refresh if text actually changed
-            }
-          },
-          listenOptions: SpeechListenOptions(
-            partialResults: true,
-            listenMode: ListenMode.dictation,
-          ),
-        );
-      }
-    } else {
-      stopListening(updateUI);
+    // 1. If currently listening -> CLICK TO PAUSE
+    if (isListening && !isPaused) {
+      isPaused = true;
+      _speechToText.stop(); // Stop the engine
+      updateUI();
+      return;
     }
+
+    // 2. If already paused -> CLICK TO RESUME
+    if (isPaused) {
+      isPaused = false;
+      _startListeningLoop(updateUI); // Restart the engine
+      return;
+    }
+
+    // 3. START FRESH (First time clicking)
+    bool available = await _speechToText.initialize(
+      onStatus: (status) {
+        // If engine stops because you paused to think, wake it back up!
+        if (status == 'done' && isListening && !isPaused) {
+          _startListeningLoop(updateUI);
+        }
+      },
+    );
+
+    if (available) {
+      isListening = true;
+      isPaused = false;
+      _finalTranscript = ""; // Reset memory for a new message
+      _startListeningLoop(updateUI);
+    }
+  }
+
+  void _startListeningLoop(Function updateUI) {
+    _speechToText.listen(
+      onResult: (result) {
+        // Every time the engine thinks a sentence is "Final", we add it to memory
+        if (result.finalResult) {
+          _finalTranscript = '$_finalTranscript ${result.recognizedWords}'
+              .trim();
+        }
+
+        // Display = History + whatever you are currently saying
+        messageController.text = '$_finalTranscript ${result.recognizedWords}'
+            .trim();
+
+        // --- FIX: FORCE SCROLL TO BOTTOM ---
+        // This ensures you always see the last word on the 2nd line
+        messageController.selection = TextSelection.fromPosition(
+          TextPosition(offset: messageController.text.length),
+        );
+
+        updateUI();
+      },
+      listenOptions: SpeechListenOptions(
+        partialResults: true,
+        listenMode: ListenMode.dictation,
+        listenFor: const Duration(minutes: 5),
+        pauseFor: const Duration(seconds: 10),
+      ),
+    );
+    updateUI();
+  }
+
+  // --- FIX: CLEAR TEXT AFTER SEND ---
+  void stopRecordingCompletely() {
+    isListening = false;
+    isPaused = false;
+    _finalTranscript = ""; // Wipe the memory
+    _speechToText.stop();
   }
 
   Future<void> toggleSpeak(String text, Function updateUI) async {
@@ -121,8 +167,10 @@ class ChatScreenLogic {
     required DatabaseService dbService,
     required Function updateUI,
   }) async {
-    if (isListening) stopListening(updateUI);
-
+    if (isListening) {
+      stopRecordingCompletely(); // We will create this function next
+      updateUI(); // Refresh icons to show gray mic
+    }
     if (isTyping) {
       apiService.stopResponse();
       isTyping = false;
