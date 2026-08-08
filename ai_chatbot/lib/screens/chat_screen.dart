@@ -3,7 +3,6 @@ import 'package:ai_chatbot/backend/chat_screen/chat_screen_logic.dart';
 import '../database/auth_services.dart';
 import '../database/database_service.dart';
 import '../themes/app_theme.dart';
-import '../widgets/chat_screen/typing_bubble.dart';
 import 'package:ai_chatbot/widgets/chat_screen/chat_screen_suggested_ui.dart';
 import 'package:ai_chatbot/widgets/chat_screen/chat_screen_input_area.dart';
 import '../widgets/chat_screen/message_list.dart';
@@ -54,31 +53,25 @@ class _ChatScreenState extends State<ChatScreen> {
                       dbService: dbService,
                       scrollController: logic.scrollController,
                       logic: logic,
-                      currentlySpeakingText: logic.currentlySpeakingText,
-                      onNewMessage: () {
-                        logic.scrollToBottom();
-                      },
-                      refreshIcon: (){
-                        setState(() {});
-                      },
+                      currentlySpeakingText: logic.voice.currentlySpeakingText,
+                      isTyping: logic.isTyping,
+                      onNewMessage: () => logic.scrollToBottom(),
+                      refreshIcon: () => setState(() {}),
                     ),
             ),
-
-            // TYPING INDICATOR
-            if (logic.isTyping) const TypingBubble(),
 
             // INPUT AREA
             ChatInputArea(
               controller: logic.messageController,
               isTyping: logic.isTyping,
-              isListening: logic.isListening,
+              isListening: logic.voice.isListening,
+              isPaused: logic.voice.isPaused,
+              onMicTap: () => logic.toggleVoiceTyping(() => setState(() {})),
               onSend: () => logic.handleSendMessage(
                 dbService: dbService,
                 updateUI: () => setState(() {}),
               ),
-              onMicTap: () => logic.toggleVoiceTyping(() => setState(() {})),
               onChanged: (text) => setState(() {}),
-              isPaused: logic.isPaused,
             ),
           ],
         ),
@@ -115,12 +108,13 @@ class _ChatScreenState extends State<ChatScreen> {
       // this will logout the user and r => false will delete all the screens from stack so that user cannot login back without going to login page
       onLogout: () async {
         await AuthService.instance.signOut();
-        Navigator.pushAndRemoveUntil(
-          // this will remove the screens until get to the login page from stack
-          context,
-          MaterialPageRoute(builder: (c) => const LoginScreen()),
-          (r) => false,
-        );
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (c) => const LoginScreen()),
+            (route) => false,
+          );
+        }
       },
     );
   }

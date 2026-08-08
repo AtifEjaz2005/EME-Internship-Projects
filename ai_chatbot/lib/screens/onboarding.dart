@@ -123,25 +123,47 @@ class _OnboardingMainState extends State<OnboardingMain> {
     );
   }
 
-  Widget _buildNavButtons() => Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      TextButton(
-        onPressed: back,
-        child: const Text(
-          "← Previous",
-          style: TextStyle(color: Colors.white38),
+  // Inside _OnboardingMainState, update _buildNavButtons:
+  Widget _buildNavButtons() => Padding(
+    padding: const EdgeInsets.only(top: 20),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // PREVIOUS BUTTON: Now transparent with a white border for better contrast
+        OutlinedButton(
+          onPressed: back,
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: Colors.white24),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
+          ),
+          child: const Text(
+            "← Previous",
+            style: TextStyle(color: Colors.white70),
+          ),
         ),
-      ),
-      ElevatedButton(
-        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.limeGreen),
-        onPressed: currentStep == 5 ? _finish : next,
-        child: Text(
-          currentStep == 5 ? "Finish ✓" : "Next →",
-          style: const TextStyle(color: Colors.black),
+
+        // NEXT/FINISH BUTTON: Solid Lime Green with DARK text for readability
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.limeGreen,
+            foregroundColor: AppTheme.darkBackground, // DARK TEXT
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 15),
+            elevation: 5,
+          ),
+          onPressed: currentStep == 5 ? _finish : next,
+          child: Text(
+            currentStep == 5 ? "Finish ✓" : "Next →",
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
         ),
-      ),
-    ],
+      ],
+    ),
   );
 
   void _finish() async {
