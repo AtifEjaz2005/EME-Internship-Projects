@@ -4,9 +4,9 @@ import '../../themes/app_theme.dart';
 // --- THE SEARCH HEADER ---
 class SidebarSearchHeader extends StatelessWidget {
   final Function(String) onSearch;
-  final VoidCallback onClose;
+  final VoidCallback onProfileTap; // Changed from onClose
 
-  const SidebarSearchHeader({super.key, required this.onSearch, required this.onClose});
+  const SidebarSearchHeader({super.key, required this.onSearch, required this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,18 @@ class SidebarSearchHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          GestureDetector(onTap: onClose, child: Image.asset('lib/assets/drawer-icon.png', width: 40)),
+          // --- CHANGED: NEXA icon to Profile Icon ---
+          GestureDetector(
+            onTap: onProfileTap,
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.limeGreen, width: 1.5),
+              ),
+              child: const Icon(Icons.person, color: AppTheme.limeGreen, size: 28),
+            ),
+          ),
         ],
       ),
     );

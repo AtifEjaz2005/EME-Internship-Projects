@@ -102,6 +102,14 @@ class DatabaseService {
         .snapshots();
   }
 
+  Future<void> updateProfile(String fName, String lName, String phone) async {
+    await _db.collection('users').doc(uid).update({
+      'firstName': fName,
+      'lastName': lName,
+      'phone': phone,
+    });
+  }
+
   // Add this inside your DatabaseService class
   Future<List<QueryDocumentSnapshot>> getMessagesOnce(String chatId) async {
     var snapshot = await _db

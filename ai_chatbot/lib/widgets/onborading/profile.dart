@@ -19,7 +19,9 @@ class Step2Profile extends StatelessWidget {
         const SizedBox(height: 30),
         const Text("Select Age", style: TextStyle(color: Colors.white70)),
         DropdownButton<String>(
-          isExpanded: true, dropdownColor: Colors.black, value: selectedAge.isEmpty ? null : selectedAge,
+          dropdownColor: AppTheme.darkBackground, // Ensures menu is dark and readable
+          icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.limeGreen),
+          style: const TextStyle(color: Colors.white, fontSize: 16),
           hint: const Text("Select your age", style: TextStyle(color: Colors.white38)),
           items: ["Under 18", "18-24", "25-34", "35-44", "45-54", "55+"].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(color: Colors.white)))).toList(),
           onChanged: (v) => onAgeSelected(v!),

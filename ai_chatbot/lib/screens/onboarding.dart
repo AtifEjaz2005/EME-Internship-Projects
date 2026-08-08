@@ -104,67 +104,99 @@ class _OnboardingMainState extends State<OnboardingMain> {
     );
   }
 
+  // --- HEADER SECTION (Step Indicator & Skip) ---
   Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          "Step $currentStep of 5",
-          style: const TextStyle(color: AppTheme.limeGreen),
-        ),
-
-        // ONLY SHOW SKIP IF NOT ON THE LAST STEP
-        if (currentStep < 5)
-          TextButton(
-            onPressed: next,
-            child: const Text("Skip", style: TextStyle(color: Colors.white38)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Step Indicator Styled as a Chip
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.limeGreen.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppTheme.limeGreen.withValues(alpha: 0.3)),
+            ),
+            child: Text(
+              "STEP $currentStep OF 5",
+              style: const TextStyle(
+                color: AppTheme.limeGreen,
+                fontWeight: FontWeight.bold,
+                fontSize: 11,
+                letterSpacing: 1.2,
+              ),
+            ),
           ),
-      ],
+
+          // Skip Button - Made more visible with White70
+          if (currentStep < 5)
+            TextButton(
+              onPressed: next,
+              style: TextButton.styleFrom(foregroundColor: Colors.white70),
+              child: const Text(
+                "Skip",
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
-  // Inside _OnboardingMainState, update _buildNavButtons:
-  Widget _buildNavButtons() => Padding(
-    padding: const EdgeInsets.only(top: 20),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // PREVIOUS BUTTON: Now transparent with a white border for better contrast
-        OutlinedButton(
-          onPressed: back,
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: Colors.white24),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
-          ),
-          child: const Text(
-            "← Previous",
-            style: TextStyle(color: Colors.white70),
-          ),
-        ),
+ Widget _buildNavButtons() => Padding(
+        padding: const EdgeInsets.only(top: 20),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // PREVIOUS BUTTON: Now uses an Outlined style for high contrast
+            if (currentStep > 1)
+              OutlinedButton(
+                onPressed: back,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.white30, width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                ),
+                child: const Text(
+                  "Previous",
+                  style: TextStyle(
+                    color: Colors.white, // Pure white for best visibility
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            else
+              const SizedBox(), // Keeps the "Next" button on the right
 
-        // NEXT/FINISH BUTTON: Solid Lime Green with DARK text for readability
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.limeGreen,
-            foregroundColor: AppTheme.darkBackground, // DARK TEXT
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
+            // NEXT / FINISH BUTTON: Solid Lime Green with Dark Text
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.limeGreen,
+                foregroundColor: AppTheme.darkBackground, // Dark text on green background
+                elevation: 8,
+                shadowColor: AppTheme.limeGreen.withValues(alpha: 0.4),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+              ),
+              onPressed: currentStep == 5 ? _finish : next,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    currentStep == 5 ? "Finish ✓" : "Next",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 35, vertical: 15),
-            elevation: 5,
-          ),
-          onPressed: currentStep == 5 ? _finish : next,
-          child: Text(
-            currentStep == 5 ? "Finish ✓" : "Next →",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
+          ],
         ),
-      ],
-    ),
-  );
+      );
 
   void _finish() async {
     // 1. Save all the data + set 'hasCompletedOnboarding' to true

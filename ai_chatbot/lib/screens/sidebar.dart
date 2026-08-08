@@ -5,6 +5,7 @@ import '../database/database_service.dart';
 import '../themes/app_theme.dart';
 import 'package:ai_chatbot/widgets/sidebar/sidebar_user_logout_section.dart';
 import 'package:ai_chatbot/widgets/sidebar/sidebar_search_header.dart';
+import 'package:ai_chatbot/screens/profile_edit_screen.dart';
 
 class Sidebar extends StatefulWidget {
   final DatabaseService dbService;
@@ -12,7 +13,13 @@ class Sidebar extends StatefulWidget {
   final VoidCallback onNewChat;
   final VoidCallback onLogout;
 
-  const Sidebar({super.key, required this.dbService, required this.onChatSelected, required this.onNewChat, required this.onLogout});
+  const Sidebar({
+    super.key,
+    required this.dbService,
+    required this.onChatSelected,
+    required this.onNewChat,
+    required this.onLogout,
+  });
 
   @override
   State<Sidebar> createState() => _SidebarState();
@@ -20,7 +27,8 @@ class Sidebar extends StatefulWidget {
 
 class _SidebarState extends State<Sidebar> {
   final SidebarLogic logic = SidebarLogic();
-  final String userEmail = FirebaseAuth.instance.currentUser?.email ?? "User Email";
+  final String userEmail =
+      FirebaseAuth.instance.currentUser?.email ?? "User Email";
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +40,15 @@ class _SidebarState extends State<Sidebar> {
           // 1. TOP: Search and Logo
           SidebarSearchHeader(
             onSearch: (val) => setState(() => logic.searchQuery = val),
-            onClose: () => Navigator.pop(context),
+            onProfileTap: () {
+              // 1. Close the sidebar drawer first
+              Navigator.pop(context);
+              // 2. Open the Edit Profile screen
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (c) => const ProfileEditScreen()),
+              );
+            },
           ),
 
           const Divider(color: Colors.white24),
@@ -40,13 +56,23 @@ class _SidebarState extends State<Sidebar> {
           // 2. New Chat Button
           ListTile(
             leading: const Icon(Icons.add, color: AppTheme.limeGreen),
-            title: const Text("New Chat", style: TextStyle(color: Colors.white)),
+            title: const Text(
+              "New Chat",
+              style: TextStyle(color: Colors.white),
+            ),
             onTap: widget.onNewChat,
           ),
 
           const Padding(
             padding: EdgeInsets.only(left: 20, top: 20, bottom: 5),
-            child: Text("Recents", style: TextStyle(color: AppTheme.limeGreen, fontWeight: FontWeight.bold, fontSize: 16)),
+            child: Text(
+              "Recents",
+              style: TextStyle(
+                color: AppTheme.limeGreen,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
           ),
 
           // 3. MIDDLE: Scrollable Chat List
@@ -78,13 +104,20 @@ class _SidebarState extends State<Sidebar> {
             return ListTile(
               dense: true,
               title: Text(
-                data.containsKey('title') ? data['title'] : "Chat ${chatDoc.id.substring(0, 5)}",
+                data.containsKey('title')
+                    ? data['title']
+                    : "Chat ${chatDoc.id.substring(0, 5)}",
                 style: const TextStyle(color: Colors.white, fontSize: 15),
-                maxLines: 1, overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
               onTap: () => widget.onChatSelected(chatDoc.id),
               trailing: IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.redAccent,
+                  size: 18,
+                ),
                 onPressed: () => _confirmDelete(chatDoc.id),
               ),
             );
@@ -102,8 +135,14 @@ class _SidebarState extends State<Sidebar> {
         backgroundColor: AppTheme.darkBackground,
         title: const Text("Delete?", style: TextStyle(color: Colors.white)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text("No")),
-          TextButton(onPressed: () => Navigator.pop(c, true), child: const Text("Yes", style: TextStyle(color: Colors.red))),
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text("No"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text("Yes", style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
