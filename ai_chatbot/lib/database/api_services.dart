@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import '../models/message.dart';
 
 class ApiService {
-  // 1. PLACE YOUR OPENROUTER KEY HERE (Starts with sk-or-v1-...)
   final String apiKey = "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";
 
   http.Client? _client;
@@ -11,7 +10,6 @@ class ApiService {
   Future<String> sendMessage(List<Message> messages) async {
     _client = http.Client();
 
-    // 2. OpenRouter API Address
     final url = Uri.parse("https://openrouter.ai/api/v1/chat/completions");
 
     try {
@@ -20,13 +18,12 @@ class ApiService {
         headers: {
           "Authorization": "Bearer $apiKey",
           "Content-Type": "application/json",
-          // OpenRouter likes these headers (can be anything)
           "HTTP-Referer": "http://localhost:3000",
           "X-Title": "NEXA AI Chatbot",
         },
         body: jsonEncode({
           // 3. Using a high-quality FREE model to avoid credit issues
-          "model": "openai/gpt-oss-20b:free",
+          "model": "google/gemma-4-26b-a4b-it:free",
 
           // 4. Converting messages back to User/Assistant format
           "messages": messages.map((m) => m.toJson()).toList(),
