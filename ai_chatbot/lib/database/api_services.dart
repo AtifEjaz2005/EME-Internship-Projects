@@ -3,7 +3,8 @@ import 'package:http/http.dart' as http;
 import '../models/message.dart';
 
 class ApiService {
-  final String apiKey = "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";
+  final String apiKey =
+      "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";
 
   http.Client? _client;
 
@@ -23,7 +24,7 @@ class ApiService {
         },
         body: jsonEncode({
           // 3. Using a high-quality FREE model to avoid credit issues
-          "model": "google/gemma-4-26b-a4b-it:free",
+          "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
 
           // 4. Converting messages back to User/Assistant format
           "messages": messages.map((m) => m.toJson()).toList(),
