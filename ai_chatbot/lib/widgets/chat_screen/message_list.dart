@@ -61,14 +61,13 @@ class _MessageListState extends State<MessageList> {
 
             var data = docs[index];
             return ChatBubble(
-              message: Message(text: data['text'], isUser: data['isUser']),
-              currentlySpeakingText: widget.currentlySpeakingText,
-              // When clicking speak, it refreshes the icon but doesn't scroll
-              onSpeak: () => widget.logic.voice.toggleReadAloud(
-                data['text'],
-                widget.refreshIcon,
-              ),
-            );
+  message: Message(text: data['text'], isUser: data['isUser']),
+  currentlySpeakingText: widget.currentlySpeakingText, // PASS THIS
+  onSpeak: () => widget.logic.voice.toggleReadAloud(
+    data['text'],
+    widget.refreshIcon,
+  ),
+);
           },
         );
       },
