@@ -14,14 +14,12 @@ class ChatScreenLogic {
   bool isTyping = false;
   String? currentChatId;
   List<String> currentSuggestions = [];
+  String streamingResponse = "";
 
   void refreshSuggestions() {
     currentSuggestions = (List<String>.from([
-      "Open Chrome",
-      "Take screenshot",
-      "Mute volume",
-      "Turn off PC",
-    ])..shuffle()).take(3).toList();
+      "Open Chrome", "Take screenshot", "Increase Volume", "Lower Brightness"
+    ])..shuffle()).take(4).toList();
   }
 
   void scrollToBottom() {
@@ -30,94 +28,83 @@ class ChatScreenLogic {
     }
   }
 
-  Future<void> handleSendMessage({
-    String? text,
-    required DatabaseService dbService,
-    required Function updateUI,
-  }) async {
-    // A. Handle "Stop Button" during AI response
+  void toggleVoiceTyping(Function updateUI) {
+    voice.toggleVoice(messageController, updateUI);
+  }
+
+  Future<void> handleSendMessage({String? text, required DatabaseService dbService, required Function updateUI}) async {
     if (isTyping) {
       apiService.stopResponse();
       isTyping = false;
+      streamingResponse = "";
       updateUI();
       return;
     }
 
-    // B. Grab text and handle Mic State
     String msgText = text ?? messageController.text.trim();
     if (msgText.isEmpty) return;
 
-    if (voice.isListening) {
-      voice.reset();
-    }
+    if (voice.isListening) voice.reset();
     messageController.clear();
 
-    // C. Initialize Chat ID
     if (currentChatId == null) {
       currentChatId = await dbService.createNewChat();
       await dbService.updateChatTitle(currentChatId!, msgText);
     }
 
-    // D. Save User Message
-    await dbService.saveMessage(
-      currentChatId!,
-      Message(text: msgText, isUser: true),
-    );
+    await dbService.saveMessage(currentChatId!, Message(text: msgText, isUser: true));
     isTyping = true;
+    streamingResponse = "";
     updateUI();
 
+    var userSnap = await FirebaseFirestore.instance.collection('users').doc(dbService.uid).get();
+    var userData = userSnap.data() as Map<String, dynamic>;
+
+    // THE FULL COMMAND LIST - DO NOT REMOVE ANY
+    String contextPrompt = """You are NEXA. User: ${userData['status']}.
+    RULES: You MUST include the following tags at the end of your response for PC actions:
+    1. Open File Explorer: [CMD:open_explorer]
+    2. Open Chrome: [CMD:open_chrome]
+    3. Take Screenshot: [CMD:screenshot]
+    4. Volume Up: [CMD:volume_up]
+    5. Volume Down: [CMD:volume_down]
+    6. Brightness Up: [CMD:brightness_up]
+    7. Brightness Down: [CMD:brightness_down]
+    8. Close Current Window: [CMD:close_window]
+    9. Power Off PC: [CMD:power_off]
+
+    If user says 'it's too loud', use [CMD:volume_down]. If they say 'make it brighter', use [CMD:brightness_up].""";
+
+    var messageDocs = await dbService.getMessagesOnce(currentChatId!);
+    List<Message> history = messageDocs.map((doc) => Message(text: doc['text'], isUser: doc['isUser'])).toList();
+
     try {
-      // E. Fetch Profile Context (Personalization)
-      var userSnap = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(dbService.uid)
-          .get();
-      var u = userSnap.data() as Map<String, dynamic>;
-      String contextPrompt =
-          "You are NEXA. User is ${u['status']} from ${u['country']}. PC CMDs: [CMD:open_chrome], [CMD:screenshot], [CMD:open_explorer], [CMD:volume_up], [CMD:volume_down], [CMD:brightness_up], [CMD:brightness_down], [CMD:close_window], [CMD:power_off].";
+      await for (var word in apiService.sendMessageStream([Message(text: contextPrompt, isUser: false), ...history])) {
+        if (!isTyping) break;
+        streamingResponse += word;
+        updateUI();
+        scrollToBottom();
+      }
 
-      // F. Fetch History (Context)
-      var messageDocs = await dbService.getMessagesOnce(currentChatId!);
-      List<Message> history = messageDocs
-          .map((doc) => Message(text: doc['text'], isUser: doc['isUser']))
-          .toList();
-
-      // G. Call AI
-      String response = await apiService.sendMessage([
-        Message(text: contextPrompt, isUser: false),
-        ...history,
-      ]);
-
-      // H. Scan for PC Commands
-      if (response.contains("[CMD:")) {
-        final RegExp regex = RegExp(r"\[CMD:\s*(.*?)\s*\]");
-        final match = regex.firstMatch(response);
+      if (streamingResponse.contains("[CMD:")) {
+        final match = RegExp(r"\[CMD:\s*(.*?)\s*\]").firstMatch(streamingResponse);
         if (match != null) {
+          String action = match.group(1)!.trim().toLowerCase();
           await FirebaseFirestore.instance.collection('commands').add({
-            'action': match.group(1)!.trim().toLowerCase(),
+            'action': action,
             'timestamp': FieldValue.serverTimestamp(),
           });
-          response = response.split("[CMD:")[0].trim();
+          streamingResponse = streamingResponse.split("[CMD:")[0].trim();
         }
       }
 
-      // I. Save AI Response
-      if (response != "Request stopped." && isTyping) {
-        await dbService.saveMessage(
-          currentChatId!,
-          Message(text: response, isUser: false),
-        );
+      if (isTyping && streamingResponse.isNotEmpty) {
+        await dbService.saveMessage(currentChatId!, Message(text: streamingResponse, isUser: false));
       }
-    } catch (e) {
-      print("SEND ERROR: $e");
-    }
+    } catch (e) { print("Error: $e"); }
 
     isTyping = false;
+    streamingResponse = "";
     updateUI();
-  }
-
-  void toggleVoiceTyping(Function updateUI) {
-    // This talks to the VoiceAssistant service
-    voice.toggleVoice(messageController, updateUI);
   }
 }

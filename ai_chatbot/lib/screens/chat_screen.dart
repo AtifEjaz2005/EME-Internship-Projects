@@ -56,12 +56,13 @@ class _ChatScreenState extends State<ChatScreen> {
           },
           onLogout: () async {
             await AuthService.instance.signOut();
-            if (mounted)
+            if (mounted) {
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(builder: (c) => const LoginScreen()),
                 (r) => false,
               );
+            }
           },
         ),
         body: const Center(

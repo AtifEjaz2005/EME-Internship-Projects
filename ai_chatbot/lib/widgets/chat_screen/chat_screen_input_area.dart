@@ -18,8 +18,7 @@ class ChatInputArea extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mutual Exclusivity Logic
-    bool hasManualText = controller.text.trim().isNotEmpty && !isListening;
+    bool hasText = controller.text.trim().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.only(left: 15, right: 15, bottom: 15, top: 10),
@@ -27,7 +26,7 @@ class ChatInputArea extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.darkBackground,
           borderRadius: BorderRadius.circular(25),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -35,13 +34,13 @@ class ChatInputArea extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
-                // LOCK: Disable keyboard if mic is actively hearing (unless paused)
-                enabled: !isListening || isPaused,
+                // DISBALE TEXT ENTRY while bot is typing OR while mic is recording
+                enabled: !isTyping && (!isListening || isPaused),
                 onChanged: onChanged,
                 minLines: 1, maxLines: 2,
-                style: TextStyle(color: (isListening && !isPaused) ? Colors.white24 : Colors.white),
+                style: TextStyle(color: (isListening || isTyping) ? Colors.white24 : Colors.white),
                 decoration: InputDecoration(
-                  hintText: isListening ? (isPaused ? "Paused..." : "Listening...") : "Ask anything...",
+                  hintText: isTyping ? "Generating..." : (isListening ? "Listening..." : "Ask anything..."),
                   hintStyle: const TextStyle(color: Colors.white54),
                   border: InputBorder.none,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 15),
@@ -52,19 +51,21 @@ class ChatInputArea extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 5, right: 8),
               child: Row(
                 children: [
-                  IconButton(
-                    // LOCK: Disable Mic if user is typing manually
-                    onPressed: hasManualText ? null : onMicTap,
-                    icon: Icon(
-                      !isListening ? Icons.mic_none_rounded : (isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded),
-                      color: isListening ? Colors.redAccent : (hasManualText ? Colors.white10 : Colors.white54),
-                      size: 26,
+                  // MIC ICON: Hidden while bot is responding
+                  if (!isTyping)
+                    IconButton(
+                      onPressed: (hasText && !isListening) ? null : onMicTap,
+                      icon: Icon(
+                        !isListening ? Icons.mic_none_rounded : (isPaused ? Icons.play_arrow_rounded : Icons.pause_rounded),
+                        color: isListening ? Colors.redAccent : (hasText ? Colors.white10 : Colors.white54),
+                        size: 26,
+                      ),
                     ),
-                  ),
+
+                  // SEND/STOP ICON
                   IconButton(
                     onPressed: onSend,
                     icon: Icon(
-                      // TOGGLE: Change to Stop Circle while generating
                       isTyping ? Icons.stop_circle_rounded : Icons.send_rounded,
                       color: isTyping ? Colors.redAccent : AppTheme.limeGreen,
                       size: 32,

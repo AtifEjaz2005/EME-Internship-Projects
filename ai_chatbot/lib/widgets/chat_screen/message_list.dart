@@ -3,7 +3,6 @@ import '../../database/database_service.dart';
 import '../../models/message.dart';
 import 'chat_bubble.dart';
 import 'package:ai_chatbot/backend/chat_screen/chat_screen_logic.dart';
-import 'package:ai_chatbot/widgets/chat_screen/typing_bubble.dart';
 
 class MessageList extends StatefulWidget {
   final String chatId;
@@ -14,6 +13,7 @@ class MessageList extends StatefulWidget {
   final String? currentlySpeakingText;
   final VoidCallback refreshIcon;
   final bool isTyping;
+  final String streamingText;
 
   const MessageList({
     super.key,
@@ -25,6 +25,7 @@ class MessageList extends StatefulWidget {
     required this.currentlySpeakingText,
     required this.refreshIcon,
     required this.isTyping,
+    required this.streamingText,
   });
 
   @override
@@ -44,30 +45,36 @@ class _MessageListState extends State<MessageList> {
 
         var docs = snapshot.data!.docs;
 
-         // 3. Scroll if a new message arrives OR if bot starts typing
+        // 3. Scroll if a new message arrives OR if bot starts typing
         if (docs.length > _lastMessageCount || widget.isTyping) {
           _lastMessageCount = docs.length;
-          WidgetsBinding.instance.addPostFrameCallback((_) => widget.onNewMessage());
+          WidgetsBinding.instance.addPostFrameCallback(
+            (_) => widget.onNewMessage(),
+          );
         }
 
         return ListView.builder(
           controller: widget.scrollController,
           itemCount: docs.length + (widget.isTyping ? 1 : 0),
           itemBuilder: (context, index) {
-             // 5. If we are at the end of the list and bot is typing, show the bubble
+            // If we are at the very end and the bot is typing,
+            // we show the partial AI response here!
             if (index == docs.length) {
-              return const TypingBubble();
+              // This bubble shows the words while they are streaming
+              return ChatBubble(
+                message: Message(text: widget.streamingText.isEmpty ? "..." : widget.streamingText, isUser: false),
+              );
             }
 
             var data = docs[index];
             return ChatBubble(
-  message: Message(text: data['text'], isUser: data['isUser']),
-  currentlySpeakingText: widget.currentlySpeakingText, // PASS THIS
-  onSpeak: () => widget.logic.voice.toggleReadAloud(
-    data['text'],
-    widget.refreshIcon,
-  ),
-);
+              message: Message(text: data['text'], isUser: data['isUser']),
+              currentlySpeakingText: widget.currentlySpeakingText, // PASS THIS
+              onSpeak: () => widget.logic.voice.toggleReadAloud(
+                data['text'],
+                widget.refreshIcon,
+              ),
+            );
           },
         );
       },
