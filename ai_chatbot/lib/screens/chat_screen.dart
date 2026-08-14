@@ -27,7 +27,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: AppTheme.gradientBg,
+      decoration: BoxDecoration(color: Color(0xFF161717)),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(

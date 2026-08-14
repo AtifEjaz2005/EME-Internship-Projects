@@ -38,7 +38,7 @@ class _OnboardingMainState extends State<OnboardingMain> {
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: AppTheme.gradientBg,
+        decoration: BoxDecoration(color: Color(0xFF161717)),
         child: Center(child: _buildGlassCard(child: _getStepWidget())),
       ),
     );

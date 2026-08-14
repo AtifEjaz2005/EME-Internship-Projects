@@ -46,14 +46,14 @@ class _TypingBubbleState extends State<TypingBubble> with SingleTickerProviderSt
               margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 15),
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
               decoration: BoxDecoration(
-                color: AppTheme.darkBackground, // Bot bubble color
+                color: AppTheme.botBubble, // Bot bubble color
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(20),
                   topRight: Radius.circular(20),
                   bottomRight: Radius.circular(20),
                   bottomLeft: Radius.circular(0),
                 ),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                border: Border.all(color: Colors.black87.withValues(alpha: 0.1)),
               ),
               child: const Text(
                 "Typing...",

@@ -17,9 +17,7 @@ class ChatScreenLogic {
   String streamingResponse = "";
 
   void refreshSuggestions() {
-    currentSuggestions = (List<String>.from([
-      "Open Chrome", "Take screenshot", "Increase Volume", "Lower Brightness"
-    ])..shuffle()).take(4).toList();
+    currentSuggestions = (List<String>.from(["Open Chrome", "Take screenshot", "Volume Up", "Turn off PC"])..shuffle()).take(4).toList();
   }
 
   void scrollToBottom() {
@@ -60,20 +58,7 @@ class ChatScreenLogic {
     var userSnap = await FirebaseFirestore.instance.collection('users').doc(dbService.uid).get();
     var userData = userSnap.data() as Map<String, dynamic>;
 
-    // THE FULL COMMAND LIST - DO NOT REMOVE ANY
-    String contextPrompt = """You are NEXA. User: ${userData['status']}.
-    RULES: You MUST include the following tags at the end of your response for PC actions:
-    1. Open File Explorer: [CMD:open_explorer]
-    2. Open Chrome: [CMD:open_chrome]
-    3. Take Screenshot: [CMD:screenshot]
-    4. Volume Up: [CMD:volume_up]
-    5. Volume Down: [CMD:volume_down]
-    6. Brightness Up: [CMD:brightness_up]
-    7. Brightness Down: [CMD:brightness_down]
-    8. Close Current Window: [CMD:close_window]
-    9. Power Off PC: [CMD:power_off]
-
-    If user says 'it's too loud', use [CMD:volume_down]. If they say 'make it brighter', use [CMD:brightness_up].""";
+    String contextPrompt = "You are NEXA. User: ${userData['status']}. MANDATORY PC tags: [CMD:open_explorer], [CMD:open_chrome], [CMD:screenshot], [CMD:volume_up], [CMD:volume_down], [CMD:power_off], [CMD:brightness_up], [CMD:brightness_down], [CMD:close_window].";
 
     var messageDocs = await dbService.getMessagesOnce(currentChatId!);
     List<Message> history = messageDocs.map((doc) => Message(text: doc['text'], isUser: doc['isUser'])).toList();
@@ -89,9 +74,8 @@ class ChatScreenLogic {
       if (streamingResponse.contains("[CMD:")) {
         final match = RegExp(r"\[CMD:\s*(.*?)\s*\]").firstMatch(streamingResponse);
         if (match != null) {
-          String action = match.group(1)!.trim().toLowerCase();
           await FirebaseFirestore.instance.collection('commands').add({
-            'action': action,
+            'action': match.group(1)!.trim().toLowerCase(),
             'timestamp': FieldValue.serverTimestamp(),
           });
           streamingResponse = streamingResponse.split("[CMD:")[0].trim();

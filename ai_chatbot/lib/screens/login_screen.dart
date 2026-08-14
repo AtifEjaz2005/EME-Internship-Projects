@@ -20,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Container(
         width: double.infinity, height: double.infinity,
-        decoration: AppTheme.gradientBg,
+        decoration: BoxDecoration(color: Color(0xFF161717)),
         child: Center(
           child: SingleChildScrollView(
             child: Padding(
