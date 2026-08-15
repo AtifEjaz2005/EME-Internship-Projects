@@ -22,6 +22,9 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     dbService = DatabaseService(uid: AuthService.instance.currentUserId);
     logic.refreshSuggestions();
+
+    logic.loadLastChat(dbService, () => setState(() {}));
+
   }
 
   @override

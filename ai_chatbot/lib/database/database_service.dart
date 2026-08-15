@@ -110,6 +110,25 @@ class DatabaseService {
     });
   }
 
+  Future<String?> getLatestChatId() async {
+  try {
+    var snapshot = await _db
+        .collection('users')
+        .doc(uid)
+        .collection('chats')
+        .orderBy('createdAt', descending: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      return snapshot.docs.first.id;
+    }
+  } catch (e) {
+    print("Error fetching last chat: $e");
+  }
+  return null;
+}
+
   // Add this inside your DatabaseService class
   Future<List<QueryDocumentSnapshot>> getMessagesOnce(String chatId) async {
     var snapshot = await _db
