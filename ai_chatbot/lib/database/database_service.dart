@@ -111,23 +111,23 @@ class DatabaseService {
   }
 
   Future<String?> getLatestChatId() async {
-  try {
-    var snapshot = await _db
-        .collection('users')
-        .doc(uid)
-        .collection('chats')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .get();
+    try {
+      var snapshot = await _db
+          .collection('users')
+          .doc(uid)
+          .collection('chats')
+          .orderBy('createdAt', descending: true)
+          .limit(1)
+          .get();
 
-    if (snapshot.docs.isNotEmpty) {
-      return snapshot.docs.first.id;
+      if (snapshot.docs.isNotEmpty) {
+        return snapshot.docs.first.id;
+      }
+    } catch (e) {
+      print("Error fetching last chat: $e");
     }
-  } catch (e) {
-    print("Error fetching last chat: $e");
+    return null;
   }
-  return null;
-}
 
   // Add this inside your DatabaseService class
   Future<List<QueryDocumentSnapshot>> getMessagesOnce(String chatId) async {
@@ -155,5 +155,55 @@ class DatabaseService {
   Future<Map<String, dynamic>> getUserData() async {
     var snap = await _db.collection('users').doc(uid).get();
     return snap.data() ?? {};
+  }
+
+  // This searches the WHOLE 'users' folder to find a match
+  Future<Map<String, dynamic>?> findUserByPhone(String phoneNumber) async {
+    try {
+      // Look for anyone whose 'phone' field matches the input
+      var result = await _db
+          .collection('users')
+          .where('phone', isEqualTo: phoneNumber.trim())
+          .get();
+
+      if (result.docs.isNotEmpty) {
+        // SUCCESS: Found them! Return their Name and UID
+        return result.docs.first.data();
+      } else {
+        // NOT FOUND: No one is registered with this number
+        return null;
+      }
+    } catch (e) {
+      print("Search Error: $e");
+      return null;
+    }
+  }
+
+  // This ensures both users look at the same folder
+  Future<String> getOrCreateChatRoom(
+    String friendUid,
+    String friendName,
+  ) async {
+    // We combine the two UIDs alphabetically to create a unique Room ID
+    // Example: "abc" and "xyz" will always make "abc_xyz" no matter who starts it.
+    List<String> ids = [uid, friendUid];
+    ids.sort();
+    String roomId = ids.join("_");
+
+    // We check if the room already exists, if not, we create it
+    DocumentReference roomRef = _db.collection('rooms').doc(roomId);
+
+    await roomRef.set(
+      {
+        'roomId': roomId,
+        'members': [uid, friendUid], // Both users are listed here
+        'lastMessage': 'Tap to start chatting',
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'friendName': friendName, // To show in the list easily
+      },
+      SetOptions(merge: true),
+    ); // Merge ensures we don't overwrite if it exists
+
+    return roomId;
   }
 }
