@@ -17,7 +17,6 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
   String _activeFilter = "All"; // Logic for filters
@@ -31,7 +30,6 @@ class _ChatScreenState extends State<ChatScreen> {
     logic.refreshSuggestions();
 
     logic.loadLastChat(dbService, () => setState(() {}));
-
   }
 
   @override
@@ -107,7 +105,6 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   AppBar _buildAppBar() {
-
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -123,20 +120,20 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
 
       title: Image.asset(
-      'lib/assets/nexa.png',
-      height: 50, // Adjust this to fit your AppBar height
-      fit: BoxFit.contain,
-    ),
+        'lib/assets/nexa.png',
+        height: 50, // Adjust this to fit your AppBar height
+        fit: BoxFit.contain,
+      ),
 
       actions: [
         Padding(
           padding: const EdgeInsets.only(right: 10),
           child: IconButton(
             icon: const Icon(
-            Icons.person_add_rounded,
-            color: AppTheme.limeGreen,
-            size: 28
-          ),
+              Icons.person_add_rounded,
+              color: AppTheme.limeGreen,
+              size: 28,
+            ),
             onPressed: () {
               showDialog(
                 context: context,
@@ -208,7 +205,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   filters[index],
                   style: TextStyle(
                     color: isActive ? Colors.black : Colors.white70,
-                    fontWeight: FontWeight.bold, fontSize: 13
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -228,9 +226,15 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox();
 
+        // Filter list based on search bar
         var rooms = snapshot.data!.docs.where((doc) {
           var data = doc.data() as Map<String, dynamic>;
-          String name = data['friendName'].toString().toLowerCase();
+          String name =
+              (data['name_${dbService.uid}'] ??
+                      data['phone_${dbService.uid}'] ??
+                      "")
+                  .toString()
+                  .toLowerCase();
           return name.contains(_searchQuery);
         }).toList();
 
@@ -239,21 +243,68 @@ class _ChatScreenState extends State<ChatScreen> {
           itemCount: rooms.length,
           itemBuilder: (context, index) {
             var room = rooms[index].data() as Map<String, dynamic>;
+            String myId = dbService.uid;
+            String displayName =
+                room['name_$myId'] ?? room['phone_$myId'] ?? "Unknown";
+
             return ListTile(
-              onTap: () => Navigator.push(context, MaterialPageRoute(
-                builder: (c) => PeerChatInterface(
-                  roomId: rooms[index].id,
-                  friendName: room['friendName'],
-                  dbService: dbService
-                )
-              )),
-              leading: CircleAvatar(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (c) => PeerChatInterface(
+                    roomId: rooms[index].id,
+                    friendName: displayName,
+                    dbService: dbService,
+                  ),
+                ),
+              ),
+              leading: const CircleAvatar(
                 radius: 26,
                 backgroundColor: AppTheme.botBubble,
-                child: const Icon(Icons.person, color: Colors.white54),
+                child: Icon(Icons.person, color: Colors.white54),
               ),
-              title: Text(room['friendName'], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-              subtitle: Text(room['lastMessage'], style: const TextStyle(color: Colors.white38), maxLines: 1),
+              title: Text(
+                displayName,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                room['lastMessage'] ?? "",
+                style: const TextStyle(color: Colors.white38),
+                maxLines: 1,
+              ),
+
+              // --- THE UNREAD BADGE ADDED HERE ---
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  const Text(
+                    "Now",
+                    style: TextStyle(color: Colors.white10, fontSize: 10),
+                  ),
+                  const SizedBox(height: 5),
+                  // Only show badge if count is more than 0
+                  if ((room['unread_$myId'] ?? 0) > 0)
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: const BoxDecoration(
+                        color: AppTheme.limeGreen,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        "${room['unread_$myId']}",
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             );
           },
         );

@@ -71,6 +71,7 @@ flutter:
     - "lib/assets/app-logo.png"
     - "lib/assets/drawer-icon.png"
     - "lib/assets/nexa.png"
+    - "lib/assets/nexa_ai.png"
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

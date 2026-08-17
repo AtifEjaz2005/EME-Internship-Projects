@@ -4,9 +4,15 @@ import '../../themes/app_theme.dart';
 
 class AddUserDialog extends StatefulWidget {
   final DatabaseService dbService;
-  final Function(String, String) onUserAdded; // To tell the screen who was added
+  final Function(String, String) onUserAdded;
+  final String? lockedPhone; // Optional phone number for "Locked Mode"
 
-  const AddUserDialog({super.key, required this.dbService, required this.onUserAdded});
+  const AddUserDialog({
+    super.key,
+    required this.dbService,
+    required this.onUserAdded,
+    this.lockedPhone,
+  });
 
   @override
   State<AddUserDialog> createState() => _AddUserDialogState();
@@ -14,15 +20,23 @@ class AddUserDialog extends StatefulWidget {
 
 class _AddUserDialogState extends State<AddUserDialog> {
   final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _nameController = TextEditingController(); // Controller for Name
+  final TextEditingController _nameController = TextEditingController();
   bool _isLoading = false;
   String _errorMessage = "";
+
+  @override
+  void initState() {
+    super.initState();
+    // If a phone number was passed (from a chat), put it in the box immediately
+    if (widget.lockedPhone != null) {
+      _phoneController.text = widget.lockedPhone!;
+    }
+  }
 
   void _handleSearch() async {
     String name = _nameController.text.trim();
     String phone = _phoneController.text.trim();
 
-    // Ensure both fields are filled
     if (name.isEmpty || phone.isEmpty) {
       setState(() => _errorMessage = "Please fill in all fields.");
       return;
@@ -39,20 +53,19 @@ class _AddUserDialogState extends State<AddUserDialog> {
     if (friendData != null) {
       String friendUid = friendData['uid'];
 
-      // 2. Create the shared Room using the CUSTOM NAME you entered in the form
-      String roomId = await widget.dbService.getOrCreateChatRoom(friendUid, name);
+      // 2. Create/Update shared Room (merge: true ensures messages are kept)
+      String roomId = await widget.dbService.getOrCreateChatRoom(friendUid, name, phone);
 
       if (mounted) {
         setState(() => _isLoading = false);
-        Navigator.pop(context); // Close the popup
-        widget.onUserAdded(roomId, name); // Open the chat
+        Navigator.pop(context);
+        widget.onUserAdded(roomId, name);
       }
     } else {
-      // 3. Show error if phone number is not in system
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = "User not found. This person is not registered on NEXA yet.";
+          _errorMessage = "User not found on NEXA.";
         });
       }
     }
@@ -60,26 +73,33 @@ class _AddUserDialogState extends State<AddUserDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // Check if the phone should be editable
+    bool isReadOnly = widget.lockedPhone != null;
+
     return AlertDialog(
       backgroundColor: AppTheme.darkBackground,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(25),
         side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
       ),
-      title: const Text("Add Contact",
+      title: Text(
+        isReadOnly ? "Save Contact" : "Add Contact",
         textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
       ),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text("Enter the details of the person you want to add.",
+          Text(
+            isReadOnly
+              ? "Give this number a name to save it to your contacts."
+              : "Enter the details of the person you want to add.",
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white54, fontSize: 13)
+            style: const TextStyle(color: Colors.white54, fontSize: 13)
           ),
           const SizedBox(height: 20),
 
-          // --- NAME INPUT (NEW) ---
+          // --- NAME INPUT ---
           Container(
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.3),
@@ -100,27 +120,34 @@ class _AddUserDialogState extends State<AddUserDialog> {
 
           const SizedBox(height: 15),
 
-          // --- PHONE INPUT ---
+          // --- PHONE INPUT (Disabled if isReadOnly is true) ---
           Container(
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.3),
+              // If read-only, make the background even darker/dimmer
+              color: isReadOnly ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(15),
             ),
             child: TextField(
               controller: _phoneController,
               keyboardType: TextInputType.phone,
-              style: const TextStyle(color: AppTheme.limeGreen),
-              decoration: const InputDecoration(
-                hintText: "Phone Number (e.g. +92...)",
-                hintStyle: TextStyle(color: Colors.white24),
-                prefixIcon: Icon(Icons.phone, color: AppTheme.limeGreen, size: 20),
+              enabled: !isReadOnly, // LOCKS THE FIELD
+              style: TextStyle(
+                color: isReadOnly ? Colors.white38 : AppTheme.limeGreen,
+              ),
+              decoration: InputDecoration(
+                hintText: "Phone Number",
+                hintStyle: const TextStyle(color: Colors.white24),
+                prefixIcon: Icon(
+                  Icons.phone,
+                  color: isReadOnly ? Colors.white24 : AppTheme.limeGreen,
+                  size: 20
+                ),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
               ),
             ),
           ),
 
-          // Error Message Display
           if (_errorMessage.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 10),
@@ -139,16 +166,21 @@ class _AddUserDialogState extends State<AddUserDialog> {
         _isLoading
           ? const Padding(
               padding: EdgeInsets.symmetric(horizontal: 40),
-              child: CircularProgressIndicator(color: AppTheme.limeGreen),
+              child: SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(color: AppTheme.limeGreen, strokeWidth: 2),
+              ),
             )
-
           : ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.limeGreen,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _handleSearch,
-              child: const Text("Add User", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: Text(
+                isReadOnly ? "Save" : "Add User",
+                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)
+              ),
             ),
       ],
     );

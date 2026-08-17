@@ -83,10 +83,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return RichText(
       text: TextSpan(
         children: [
-          const TextSpan(text: "Already have an account? ", style: TextStyle(color: AppTheme.darkBackground)),
+          const TextSpan(text: "Already have an account? ", style: TextStyle(color: Colors.white70)),
           TextSpan(
             text: "Login here",
-            style: const TextStyle(color: AppTheme.darkBackground, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: AppTheme.limeGreen, fontWeight: FontWeight.bold),
             recognizer: TapGestureRecognizer()..onTap = () => Navigator.pop(context),
           ),
         ],

@@ -180,30 +180,49 @@ class DatabaseService {
   }
 
   // This ensures both users look at the same folder
-  Future<String> getOrCreateChatRoom(
-    String friendUid,
-    String friendName,
-  ) async {
-    // We combine the two UIDs alphabetically to create a unique Room ID
-    // Example: "abc" and "xyz" will always make "abc_xyz" no matter who starts it.
+   Future<String> getOrCreateChatRoom(String friendUid, String friendNickname, String friendPhone) async {
+    // A. Combine IDs to make the unique Room Address
     List<String> ids = [uid, friendUid];
     ids.sort();
     String roomId = ids.join("_");
 
-    // We check if the room already exists, if not, we create it
+    // B. Get YOUR info (so User B knows your number)
+    var myDoc = await _db.collection('users').doc(uid).get();
+    String myPhone = myDoc.get('phone') ?? "Unknown";
+
     DocumentReference roomRef = _db.collection('rooms').doc(roomId);
 
-    await roomRef.set(
-      {
-        'roomId': roomId,
-        'members': [uid, friendUid], // Both users are listed here
-        'lastMessage': 'Tap to start chatting',
-        'lastMessageTime': FieldValue.serverTimestamp(),
-        'friendName': friendName, // To show in the list easily
-      },
-      SetOptions(merge: true),
-    ); // Merge ensures we don't overwrite if it exists
+    await roomRef.set({
+      'roomId': roomId,
+      'members': [uid, friendUid],
+      'lastMessage': 'New conversation started',
+      'lastMessageTime': FieldValue.serverTimestamp(),
+
+      // We store the data for BOTH perspectives
+      // User A (You) sees the Nickname you typed
+      'name_$uid': friendNickname,
+      'phone_$uid': friendPhone,
+
+      // User B (Friend) has no nickname saved for you yet, so we store your phone as their default view
+      'name_$friendUid': null,
+      'phone_$friendUid': myPhone,
+
+    }, SetOptions(merge: true));
 
     return roomId;
+  }
+
+  // 1. Reset unread count when opening a chat
+  Future<void> resetUnreadCount(String roomId) async {
+    await _db.collection('rooms').doc(roomId).update({
+      'unread_$uid': 0, // Set my unread count to 0
+    });
+  }
+
+  // 2. Add this to your updateProfile or create a new one to save a friend's name later
+  Future<void> saveContactName(String roomId, String name) async {
+    await _db.collection('rooms').doc(roomId).update({
+      'name_$uid': name, // Save the nickname for my perspective
+    });
   }
 }

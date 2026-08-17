@@ -31,7 +31,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(25),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   children: [
@@ -48,12 +47,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         : SizedBox(
                             width: double.infinity, height: 55,
                             child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.limeGreen),
+                              style: ElevatedButton.styleFrom(backgroundColor: AppTheme.darkBackground),
                               onPressed: () => logic.performLogin(
                                 context: context,
                                 updateUI: () => setState(() {}),
                               ),
-                              child: const Text("LOGIN", style: TextStyle(color: AppTheme.darkBackground, fontWeight: FontWeight.bold)),
+                              child: const Text("LOGIN", style: TextStyle(color: AppTheme.limeGreen, fontWeight: FontWeight.bold)),
                             ),
                           ),
                     const SizedBox(height: 25),
@@ -75,10 +74,10 @@ class _LoginScreenState extends State<LoginScreen> {
         RichText(
           text: TextSpan(
             children: [
-              const TextSpan(text: "Doesn't have an account? ", style: TextStyle(color: AppTheme.darkBackground)),
+              const TextSpan(text: "Doesn't have an account? ", style: TextStyle(color: Colors.white70)),
               TextSpan(
                 text: "Register here",
-                style: const TextStyle(color: AppTheme.darkBackground, fontWeight: FontWeight.bold),
+                style: const TextStyle(color: AppTheme.limeGreen, fontWeight: FontWeight.bold),
                 recognizer: TapGestureRecognizer()..onTap = () {
                   logic.clearFields();
                   Navigator.of(context).push(_createRoute());
@@ -90,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 15),
         GestureDetector(
           onTap: () => showDialog(context: context, builder: (c) => const ForgotPasswordDialog()),
-          child: const Text("Forgot Password?", style: TextStyle(color: AppTheme.darkBackground)),
+          child: const Text("Forgot Password?", style: TextStyle(color: AppTheme.limeGreen)),
         ),
       ],
     );

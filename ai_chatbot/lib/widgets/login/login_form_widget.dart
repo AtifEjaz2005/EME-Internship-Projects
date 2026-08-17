@@ -22,13 +22,13 @@ class LoginField extends StatelessWidget {
       child: TextField(
         controller: controller,
         obscureText: isPass,
-        style: const TextStyle(color: AppTheme.limeGreen),
+        style: const TextStyle(color: AppTheme.darkBackground),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(color: AppTheme.limeGreen),
+          hintStyle: const TextStyle(color: AppTheme.darkBackground),
           filled: true,
-          fillColor: AppTheme.darkBackground,
-          prefixIcon: Icon(icon, color: AppTheme.limeGreen),
+          fillColor: AppTheme.limeGreen,
+          prefixIcon: Icon(icon, color: AppTheme.darkBackground),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none,

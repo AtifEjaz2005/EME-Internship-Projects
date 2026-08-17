@@ -31,20 +31,14 @@ class _NexaInterfaceState extends State<NexaInterface> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
-        backgroundColor: Colors.white.withValues(alpha: 0.1),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: true,
-        title: const Text(
-          "NEXA ASSISTANT",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-        ),
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-          onPressed: () => Navigator.pop(context),
+        title: Image.asset(
+          'lib/assets/nexa_ai.png',
+          height: 35, // Slightly smaller than dashboard to fit the inner screen look
+          fit: BoxFit.contain,
         ),
         actions: [
           IconButton(
