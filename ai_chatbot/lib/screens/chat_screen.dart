@@ -9,6 +9,7 @@ import 'nexa_interface.dart';
 import 'package:ai_chatbot/widgets/chat_screen/add_user_form.dart';
 import 'package:ai_chatbot/screens/peer_chat_interface.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -182,7 +183,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildFilters() {
-    List<String> filters = ["All", "Unread", "Personal"];
+    List<String> filters = ["All", "Unread"];
     return SizedBox(
       height: 40,
       child: ListView.builder(
@@ -219,33 +220,65 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildHumanChatList() {
     return StreamBuilder<QuerySnapshot>(
+      // 1. We remove 'orderBy' for a second to see if the data comes back.
+      // If it works without orderBy, it proves you need to create an index!
       stream: FirebaseFirestore.instance
           .collection('rooms')
           .where('members', arrayContains: dbService.uid)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox();
+        // 2. CHECK: If Firebase had an error, print it clearly
+        if (snapshot.hasError) {
+          print("DATABASE ERROR: ${snapshot.error}");
+          return Center(
+            child: Text(
+              "Error loading chats",
+              style: TextStyle(color: Colors.red),
+            ),
+          );
+        }
 
-        // Filter list based on search bar
-        var rooms = snapshot.data!.docs.where((doc) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        // 3. Filter logic needs to be safe
+        var docs = snapshot.data!.docs;
+
+        // If docs are empty here, but you see them in Firebase Console,
+        // it means 'dbService.uid' doesn't match the IDs in the 'members' list.
+        var rooms = docs.where((doc) {
           var data = doc.data() as Map<String, dynamic>;
-          String name =
-              (data['name_${dbService.uid}'] ??
-                      data['phone_${dbService.uid}'] ??
-                      "")
-                  .toString()
-                  .toLowerCase();
-          return name.contains(_searchQuery);
+          String myId = dbService.uid;
+          String displayName = (data['name_$myId'] ?? data['phone_$myId'] ?? "")
+              .toString()
+              .toLowerCase();
+          return displayName.contains(_searchQuery);
         }).toList();
+
+        if (rooms.isEmpty) {
+          return const Center(
+            child: Text(
+              "No contacts found",
+              style: TextStyle(color: Colors.white24),
+            ),
+          );
+        }
 
         return ListView.builder(
           padding: const EdgeInsets.only(top: 10),
           itemCount: rooms.length,
           itemBuilder: (context, index) {
             var room = rooms[index].data() as Map<String, dynamic>;
-            String myId = dbService.uid;
-            String displayName =
-                room['name_$myId'] ?? room['phone_$myId'] ?? "Unknown";
+            // GET FRESH UID: This is the most important change
+            String myId = FirebaseAuth.instance.currentUser?.uid ?? "";
+
+            // Check if a name exists for YOUR current UID
+            String? savedName = room['name_$myId'];
+            String phoneOfFriend = room['phone_$myId'] ?? "Unknown";
+            // If name exists, use it. If not, show the number.
+            String displayName = (savedName != null && savedName.isNotEmpty)
+                ? savedName
+                : phoneOfFriend;
 
             return ListTile(
               onTap: () => Navigator.push(
@@ -260,7 +293,7 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               leading: const CircleAvatar(
                 radius: 26,
-                backgroundColor: AppTheme.botBubble,
+                backgroundColor: Color(0xFF4F5254),
                 child: Icon(Icons.person, color: Colors.white54),
               ),
               title: Text(
@@ -271,40 +304,27 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ),
               subtitle: Text(
-                room['lastMessage'] ?? "",
+                room['lastMessage'] ?? "No messages yet",
                 style: const TextStyle(color: Colors.white38),
                 maxLines: 1,
               ),
-
-              // --- THE UNREAD BADGE ADDED HERE ---
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  const Text(
-                    "Now",
-                    style: TextStyle(color: Colors.white10, fontSize: 10),
-                  ),
-                  const SizedBox(height: 5),
-                  // Only show badge if count is more than 0
-                  if ((room['unread_$myId'] ?? 0) > 0)
-                    Container(
-                      padding: const EdgeInsets.all(6),
+              trailing: (room['unread_$myId'] ?? 0) > 0
+                  ? Container(
+                      padding: const EdgeInsets.all(8),
                       decoration: const BoxDecoration(
-                        color: AppTheme.limeGreen,
+                        color: Color(0xFFB6FF2E),
                         shape: BoxShape.circle,
                       ),
                       child: Text(
                         "${room['unread_$myId']}",
                         style: const TextStyle(
                           color: Colors.black,
-                          fontSize: 10,
+                          fontSize: 12,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                ],
-              ),
+                    )
+                  : const SizedBox(),
             );
           },
         );

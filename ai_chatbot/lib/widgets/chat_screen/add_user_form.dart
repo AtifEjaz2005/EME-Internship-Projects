@@ -65,7 +65,7 @@ class _AddUserDialogState extends State<AddUserDialog> {
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _errorMessage = "User not found on NEXA.";
+          _errorMessage = "User not found. This user is not registered on NEXA.";
         });
       }
     }

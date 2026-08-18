@@ -5,6 +5,8 @@ import '../themes/app_theme.dart';
 import '../models/message.dart';
 import '../widgets/chat_screen/chat_bubble.dart';
 import 'package:ai_chatbot/widgets/chat_screen/add_user_form.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 class PeerChatInterface extends StatefulWidget {
   final String roomId;
   final String friendName;
@@ -30,6 +32,16 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
     super.initState();
     // Clear unread messages for me when I open the room
     widget.dbService.resetUnreadCount(widget.roomId);
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   void _sendHumanMessage() async {
@@ -59,7 +71,7 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
         .collection('rooms')
         .doc(widget.roomId)
         .update({
-          'lastMessage': text,
+          'lastMessage': text, // Now shows the actual message
           'lastMessageTime': FieldValue.serverTimestamp(),
           'unread_$friendId': FieldValue.increment(1),
         });
@@ -67,11 +79,11 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
 
   @override
   Widget build(BuildContext context) {
-    String myId = widget.dbService.uid;
-
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.white.withValues(alpha: 0.05),
         elevation: 0,
         title: Text(
@@ -91,7 +103,10 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
               if (!snapshot.hasData) return const SizedBox();
               var roomData = snapshot.data!.data() as Map<String, dynamic>;
 
-              // If we don't have a name saved for this user yet
+              // GET FRESH UID inside the builder
+              String myId = FirebaseAuth.instance.currentUser?.uid ?? "";
+
+              // Check if YOU have saved a name for the person in this room
               if (roomData['name_$myId'] == null) {
                 return Container(
                   width: double.infinity,
@@ -109,12 +124,11 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
                       ),
                       TextButton(
                         onPressed: () {
-                          // Open the REUSABLE FORM instead of the old dialog
                           showDialog(
                             context: context,
                             builder: (context) => AddUserDialog(
                               dbService: widget.dbService,
-                              // PASS THE FRIEND'S PHONE NUMBER HERE
+                              // Use the phone number from the room data
                               lockedPhone: roomData['phone_$myId'],
                               onUserAdded: (roomId, name) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -139,7 +153,7 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
                   ),
                 );
               }
-              return const SizedBox(); // Hide banner if name exists
+              return const SizedBox();
             },
           ),
 
@@ -154,15 +168,17 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox();
                 var docs = snapshot.data!.docs;
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                 return ListView.builder(
-                  padding: const EdgeInsets.only(top: 20),
                   controller: _scrollController,
+                  padding: const EdgeInsets.only(top: 20),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     var data = docs[index].data() as Map<String, dynamic>;
                     bool isMe = data['senderId'] == widget.dbService.uid;
-                    return ChatBubble(
-                      message: Message(text: data['text'], isUser: isMe),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: ChatBubble(message: Message(text: data['text'], isUser: isMe)),
                     );
                   },
                 );

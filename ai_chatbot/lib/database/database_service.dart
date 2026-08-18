@@ -179,39 +179,37 @@ class DatabaseService {
     }
   }
 
-  // This ensures both users look at the same folder
-   Future<String> getOrCreateChatRoom(String friendUid, String friendNickname, String friendPhone) async {
-    // A. Combine IDs to make the unique Room Address
-    List<String> ids = [uid, friendUid];
+ // 1.3: THE STABLE ROOM CREATOR
+  Future<String> getOrCreateChatRoom(String friendUid, String friendNickname, String friendPhone) async {
+    // Ensure we have a clean UID
+    String myId = uid.trim();
+    String fId = friendUid.trim();
+
+    // Create the unique Room Address
+    List<String> ids = [myId, fId];
     ids.sort();
     String roomId = ids.join("_");
 
-    // B. Get YOUR info (so User B knows your number)
-    var myDoc = await _db.collection('users').doc(uid).get();
-    String myPhone = myDoc.get('phone') ?? "Unknown";
+    // Get your own phone number so the friend knows who you are
+    var myDoc = await _db.collection('users').doc(myId).get();
+    String myPhone = myDoc.data()?['phone'] ?? "Unknown";
 
-    DocumentReference roomRef = _db.collection('rooms').doc(roomId);
-
-    await roomRef.set({
+    await _db.collection('rooms').doc(roomId).set({
       'roomId': roomId,
-      'members': [uid, friendUid],
-      'lastMessage': 'New conversation started',
+      'members': [myId, fId],
       'lastMessageTime': FieldValue.serverTimestamp(),
 
-      // We store the data for BOTH perspectives
-      // User A (You) sees the Nickname you typed
-      'name_$uid': friendNickname,
-      'phone_$uid': friendPhone,
+      // SAVE NICKNAME: specifically for YOU (myId)
+      'name_$myId': friendNickname,
+      'phone_$myId': friendPhone,
 
-      // User B (Friend) has no nickname saved for you yet, so we store your phone as their default view
-      'name_$friendUid': null,
-      'phone_$friendUid': myPhone,
-
-    }, SetOptions(merge: true));
+      // For the friend, we leave their nickname for you as null (Unknown)
+      // but we provide them your phone number
+      'phone_$fId': myPhone,
+    }, SetOptions(merge: true)); // MERGE is critical so we don't delete old data
 
     return roomId;
   }
-
   // 1. Reset unread count when opening a chat
   Future<void> resetUnreadCount(String roomId) async {
     await _db.collection('rooms').doc(roomId).update({
@@ -219,10 +217,64 @@ class DatabaseService {
     });
   }
 
-  // 2. Add this to your updateProfile or create a new one to save a friend's name later
-  Future<void> saveContactName(String roomId, String name) async {
-    await _db.collection('rooms').doc(roomId).update({
-      'name_$uid': name, // Save the nickname for my perspective
+
+// --- MODULE 1: WebRTC SIGNALING TOOLS ---
+
+  // 1. CREATE A CALL: This starts the signaling process
+  Future<void> createCallDocument(String roomId, Map<String, dynamic> offer) async {
+    await _db.collection('calls').doc(roomId).set({
+      'callerId': uid,
+      'offer': offer, // The "Technical Invitation"
+      'status': 'ringing',
+      'createdAt': FieldValue.serverTimestamp(),
     });
   }
+
+  // 2. ANSWER A CALL: This allows User B to accept the invitation
+  Future<void> answerCall(String roomId, Map<String, dynamic> answer) async {
+    await _db.collection('calls').doc(roomId).update({
+      'answer': answer, // The "Technical Acceptance"
+      'status': 'connected',
+    });
+  }
+
+  // 3. CLEANUP: Delete the signaling data when the call ends
+  Future<void> endCall(String roomId) async {
+    // Delete the candidates sub-collections first
+    var callerCandidates = await _db.collection('calls').doc(roomId).collection('callerCandidates').get();
+    for (var doc in callerCandidates.docs) { await doc.reference.delete(); }
+
+    var receiverCandidates = await _db.collection('calls').doc(roomId).collection('receiverCandidates').get();
+    for (var doc in receiverCandidates.docs) { await doc.reference.delete(); }
+
+    // Finally delete the main call document
+    await _db.collection('calls').doc(roomId).delete();
+  }
+
+  // 4. ADD AN ICE CANDIDATE: Saves your "Digital Address" to the shared locker
+  Future<void> addIceCandidate(String roomId, Map<String, dynamic> candidate, bool isCaller) async {
+    // If I am the caller, I save to 'callerCandidates'
+    // If I am the receiver, I save to 'receiverCandidates'
+    String subCollection = isCaller ? 'callerCandidates' : 'receiverCandidates';
+
+    await _db
+        .collection('calls')
+        .doc(roomId)
+        .collection(subCollection)
+        .add(candidate);
+  }
+
+  // 5. LISTEN FOR ICE CANDIDATES: A live stream to hear the other person's address
+  Stream<QuerySnapshot> getIceCandidates(String roomId, bool listenForCaller) {
+    // If I am the receiver, I listen for the 'callerCandidates'
+    // If I am the caller, I listen for the 'receiverCandidates'
+    String subCollection = listenForCaller ? 'callerCandidates' : 'receiverCandidates';
+
+    return _db
+        .collection('calls')
+        .doc(roomId)
+        .collection(subCollection)
+        .snapshots();
+  }
+
 }

@@ -31,6 +31,7 @@ class _NexaInterfaceState extends State<NexaInterface> {
     return Scaffold(
       backgroundColor: AppTheme.darkBackground,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -43,8 +44,9 @@ class _NexaInterfaceState extends State<NexaInterface> {
         actions: [
           IconButton(
             icon: const Icon(
-              Icons.add_circle_outline_rounded,
+              Icons.add_rounded,
               color: AppTheme.limeGreen,
+              size: 30,
             ),
             onPressed: () {
               setState(() {
