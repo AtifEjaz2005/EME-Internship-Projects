@@ -6,6 +6,8 @@ import '../models/message.dart';
 import '../widgets/chat_screen/chat_bubble.dart';
 import 'package:ai_chatbot/widgets/chat_screen/add_user_form.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ai_chatbot/screens/voice_call_screen.dart';
+import 'package:ai_chatbot/screens/video_call_screen.dart';
 
 class PeerChatInterface extends StatefulWidget {
   final String roomId;
@@ -42,6 +44,45 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
         curve: Curves.easeOut,
       );
     }
+  }
+
+  // void _startCall({required bool isVideo}) {
+  //   // Get the friend's ID from the Room ID (RoomID is "MyID_FriendID")
+  //   // String friendId = widget.roomId
+  //   //     .split('_')
+  //   //     .firstWhere((id) => id != widget.dbService.uid);
+
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (context) => CallScreen(
+  //         roomId: widget.roomId,
+  //         isCaller: true,
+  //         dbService: widget.dbService,
+  //         // We will update CallScreen to handle isVideo in the next step
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  void _handleCallInitiation({required bool isVideo}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => isVideo
+            ? VideoCallScreen(
+                roomId: widget.roomId,
+                isCaller: true,
+                dbService: widget.dbService,
+              )
+            : VoiceCallScreen(
+                roomId: widget.roomId,
+                isCaller: true,
+                friendName: widget.friendName,
+                dbService: widget.dbService,
+              ),
+      ),
+    );
   }
 
   void _sendHumanMessage() async {
@@ -83,13 +124,30 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
       backgroundColor: AppTheme.darkBackground,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
         backgroundColor: Colors.white.withValues(alpha: 0.05),
         elevation: 0,
+        automaticallyImplyLeading: false,
         title: Text(
           widget.friendName,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
+        centerTitle: false, // Move name to left to make room for icons
+        // --- ADDED CALLING BUTTONS ---
+        actions: [
+          // VOICE CALL BUTTON
+          IconButton(
+            icon: const Icon(Icons.call_rounded, color: AppTheme.limeGreen),
+            onPressed: () =>
+                _handleCallInitiation(isVideo: false), // Now it finds it!
+          ),
+          // VIDEO CALL
+          IconButton(
+            icon: const Icon(Icons.videocam_rounded, color: AppTheme.limeGreen),
+            onPressed: () =>
+                _handleCallInitiation(isVideo: true), // Now it finds it!
+          ),
+          const SizedBox(width: 10),
+        ],
       ),
       body: Column(
         children: [
@@ -168,7 +226,9 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const SizedBox();
                 var docs = snapshot.data!.docs;
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => _scrollToBottom(),
+                );
                 return ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.only(top: 20),
@@ -178,7 +238,9 @@ class _PeerChatInterfaceState extends State<PeerChatInterface> {
                     bool isMe = data['senderId'] == widget.dbService.uid;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
-                      child: ChatBubble(message: Message(text: data['text'], isUser: isMe)),
+                      child: ChatBubble(
+                        message: Message(text: data['text'], isUser: isMe),
+                      ),
                     );
                   },
                 );

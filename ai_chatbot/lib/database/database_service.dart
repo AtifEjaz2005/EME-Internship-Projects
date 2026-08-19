@@ -36,6 +36,10 @@ class DatabaseService {
     return doc.id;
   }
 
+  Future<void> updateCallStatus(String roomId, String status) async {
+    await _db.collection('calls').doc(roomId).update({'status': status});
+  }
+
   // Update the chat title after the first message
   Future<void> updateChatTitle(String chatId, String firstMessage) async {
     // We take the first 20 characters of the user's message as the title
@@ -179,8 +183,12 @@ class DatabaseService {
     }
   }
 
- // 1.3: THE STABLE ROOM CREATOR
-  Future<String> getOrCreateChatRoom(String friendUid, String friendNickname, String friendPhone) async {
+  // 1.3: THE STABLE ROOM CREATOR
+  Future<String> getOrCreateChatRoom(
+    String friendUid,
+    String friendNickname,
+    String friendPhone,
+  ) async {
     // Ensure we have a clean UID
     String myId = uid.trim();
     String fId = friendUid.trim();
@@ -194,22 +202,26 @@ class DatabaseService {
     var myDoc = await _db.collection('users').doc(myId).get();
     String myPhone = myDoc.data()?['phone'] ?? "Unknown";
 
-    await _db.collection('rooms').doc(roomId).set({
-      'roomId': roomId,
-      'members': [myId, fId],
-      'lastMessageTime': FieldValue.serverTimestamp(),
+    await _db.collection('rooms').doc(roomId).set(
+      {
+        'roomId': roomId,
+        'members': [myId, fId],
+        'lastMessageTime': FieldValue.serverTimestamp(),
 
-      // SAVE NICKNAME: specifically for YOU (myId)
-      'name_$myId': friendNickname,
-      'phone_$myId': friendPhone,
+        // SAVE NICKNAME: specifically for YOU (myId)
+        'name_$myId': friendNickname,
+        'phone_$myId': friendPhone,
 
-      // For the friend, we leave their nickname for you as null (Unknown)
-      // but we provide them your phone number
-      'phone_$fId': myPhone,
-    }, SetOptions(merge: true)); // MERGE is critical so we don't delete old data
+        // For the friend, we leave their nickname for you as null (Unknown)
+        // but we provide them your phone number
+        'phone_$fId': myPhone,
+      },
+      SetOptions(merge: true),
+    ); // MERGE is critical so we don't delete old data
 
     return roomId;
   }
+
   // 1. Reset unread count when opening a chat
   Future<void> resetUnreadCount(String roomId) async {
     await _db.collection('rooms').doc(roomId).update({
@@ -217,14 +229,22 @@ class DatabaseService {
     });
   }
 
-
-// --- MODULE 1: WebRTC SIGNALING TOOLS ---
+  // --- MODULE 1: WebRTC SIGNALING TOOLS ---
 
   // 1. CREATE A CALL: This starts the signaling process
-  Future<void> createCallDocument(String roomId, Map<String, dynamic> offer) async {
+  Future<void> createCallDocument(
+    String roomId,
+    Map<String, dynamic> offer,
+    String receiverId,
+    bool isVideo,
+    String callerName,
+  ) async {
     await _db.collection('calls').doc(roomId).set({
       'callerId': uid,
-      'offer': offer, // The "Technical Invitation"
+      'receiverId': receiverId,
+      'callerName': callerName,
+      'offer': offer,
+      'isVideo': isVideo,
       'status': 'ringing',
       'createdAt': FieldValue.serverTimestamp(),
     });
@@ -241,18 +261,54 @@ class DatabaseService {
   // 3. CLEANUP: Delete the signaling data when the call ends
   Future<void> endCall(String roomId) async {
     // Delete the candidates sub-collections first
-    var callerCandidates = await _db.collection('calls').doc(roomId).collection('callerCandidates').get();
-    for (var doc in callerCandidates.docs) { await doc.reference.delete(); }
+    var callerCandidates = await _db
+        .collection('calls')
+        .doc(roomId)
+        .collection('callerCandidates')
+        .get();
+    for (var doc in callerCandidates.docs) {
+      await doc.reference.delete();
+    }
 
-    var receiverCandidates = await _db.collection('calls').doc(roomId).collection('receiverCandidates').get();
-    for (var doc in receiverCandidates.docs) { await doc.reference.delete(); }
+    var receiverCandidates = await _db
+        .collection('calls')
+        .doc(roomId)
+        .collection('receiverCandidates')
+        .get();
+    for (var doc in receiverCandidates.docs) {
+      await doc.reference.delete();
+    }
 
     // Finally delete the main call document
     await _db.collection('calls').doc(roomId).delete();
   }
 
+  Future<void> prepareCall(String roomId) async {
+    final callRef = _db.collection('calls').doc(roomId);
+
+    final callerCandidates = await callRef.collection('callerCandidates').get();
+
+    for (final doc in callerCandidates.docs) {
+      await doc.reference.delete();
+    }
+
+    final receiverCandidates = await callRef
+        .collection('receiverCandidates')
+        .get();
+
+    for (final doc in receiverCandidates.docs) {
+      await doc.reference.delete();
+    }
+
+    await callRef.delete();
+  }
+
   // 4. ADD AN ICE CANDIDATE: Saves your "Digital Address" to the shared locker
-  Future<void> addIceCandidate(String roomId, Map<String, dynamic> candidate, bool isCaller) async {
+  Future<void> addIceCandidate(
+    String roomId,
+    Map<String, dynamic> candidate,
+    bool isCaller,
+  ) async {
     // If I am the caller, I save to 'callerCandidates'
     // If I am the receiver, I save to 'receiverCandidates'
     String subCollection = isCaller ? 'callerCandidates' : 'receiverCandidates';
@@ -265,10 +321,13 @@ class DatabaseService {
   }
 
   // 5. LISTEN FOR ICE CANDIDATES: A live stream to hear the other person's address
-  Stream<QuerySnapshot> getIceCandidates(String roomId, bool listenForCaller) {
-    // If I am the receiver, I listen for the 'callerCandidates'
-    // If I am the caller, I listen for the 'receiverCandidates'
-    String subCollection = listenForCaller ? 'callerCandidates' : 'receiverCandidates';
+  Stream<QuerySnapshot<Map<String, dynamic>>> getIceCandidates(
+    String roomId,
+    bool listenForCaller,
+  ) {
+    String subCollection = listenForCaller
+        ? 'callerCandidates'
+        : 'receiverCandidates';
 
     return _db
         .collection('calls')
@@ -276,5 +335,4 @@ class DatabaseService {
         .collection(subCollection)
         .snapshots();
   }
-
 }

@@ -10,6 +10,7 @@ import 'package:ai_chatbot/widgets/chat_screen/add_user_form.dart';
 import 'package:ai_chatbot/screens/peer_chat_interface.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ai_chatbot/screens/incoming_call_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -31,6 +32,8 @@ class _ChatScreenState extends State<ChatScreen> {
     logic.refreshSuggestions();
 
     logic.loadLastChat(dbService, () => setState(() {}));
+
+    _listenForIncomingCalls();
   }
 
   @override
@@ -330,5 +333,44 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       },
     );
+  }
+
+  // 2. THE SECURITY CAMERA FUNCTION
+  void _listenForIncomingCalls() {
+    FirebaseFirestore.instance
+        .collection('calls')
+        .where('receiverId', isEqualTo: dbService.uid)
+        .where('status', isEqualTo: 'ringing')
+        .snapshots()
+        .listen((snapshot) async {
+          if (snapshot.docs.isNotEmpty) {
+            var data = snapshot.docs.first.data();
+            String roomId = snapshot.docs.first.id;
+
+            // GET THE SAVED NAME: Look into the 'rooms' collection
+            var roomSnap = await FirebaseFirestore.instance
+                .collection('rooms')
+                .doc(roomId)
+                .get();
+            String callerDisplayName =
+                roomSnap.data()?['name_${dbService.uid}'] ?? data['callerId'];
+
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (c) => IncomingCallScreen(
+                    callerName:
+                        callerDisplayName, // Now shows the saved nickname!
+                    roomId: roomId,
+                    isVideo: data['isVideo'] ?? true,
+                    offer: data['offer'],
+                    dbService: dbService,
+                  ),
+                ),
+              );
+            }
+          }
+        });
   }
 }
