@@ -32,7 +32,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   final WebRTCService _webrtcService = WebRTCService();
 
   bool _isMuted = false;
-  bool _isInitializing = true;
+  final bool _isInitializing = true;
 
   @override
   void initState() {

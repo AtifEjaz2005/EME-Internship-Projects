@@ -31,7 +31,7 @@ class _VoiceCallScreenState extends State<VoiceCallScreen> {
 
   bool _isMuted = false;
   bool _isSpeakerOn = false;
-  bool _isInitializing = true;
+  final bool _isInitializing = true;
 
   @override
   void initState() {
