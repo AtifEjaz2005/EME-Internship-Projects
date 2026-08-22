@@ -1,35 +1,32 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'firebase_options.dart'; // This file was created by flutterfire
-
+import 'package:firebase_core/firebase_core.dart';
+import 'backend/firebase_options.dart';
+import 'themes/app_colors.dart';
+import 'package:spotify_clone/screens/login_screen.dart';
 void main() async {
-  // 1. Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Initialize Firebase using the generated options
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyApp());
+  runApp(const SonicStream());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class SonicStream extends StatelessWidget {
+  const SonicStream({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(), // Spotify is dark by default!
-      home: const Scaffold(
-        body: Center(
-          child: Text(
-            "Spotify Clone: Firebase Connected ✅",
-            style: TextStyle(fontSize: 20, color: Colors.green),
-          ),
-        ),
+      title: 'Sonic Stream',
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: AppColors.primaryBackground,
+        fontFamily: 'Plus Jakarta Sans', // Ensure this is in your pubspec.yaml
       ),
+      home: const LoginScreen(),
     );
   }
 }
