@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:spotify_clone/screens/main_wrapper.dart';
+import 'package:spotify_clone/services/auth_service.dart';
 import 'backend/firebase_options.dart';
 import 'themes/app_colors.dart';
 import 'package:spotify_clone/screens/login_screen.dart';
@@ -26,7 +29,18 @@ class SonicStream extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.primaryBackground,
         fontFamily: 'Plus Jakarta Sans', // Ensure this is in your pubspec.yaml
       ),
-      home: const LoginScreen(),
+      // Inside SonicStream class build method
+home: StreamBuilder<User?>(
+  stream: AuthService().user,
+  builder: (context, snapshot) {
+    // If the snapshot has data, the user is logged in
+    if (snapshot.hasData) {
+      return const MainWrapper(); // Your Home Shell
+    } else {
+      return const LoginScreen(); // Show Login if not authenticated
+    }
+  },
+),
     );
   }
 }
