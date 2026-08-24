@@ -11,13 +11,32 @@ class MiniPlayer extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: AppColors.surfaceHigh.withValues(alpha: 0.9),
-        border: const Border(top: BorderSide(color: Colors.white10, width: 0.5)),
+        border: const Border(
+          top: BorderSide(color: Colors.white10, width: 0.5),
+        ),
       ),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network('https://via.placeholder.com/48', width: 48, height: 48, fit: BoxFit.cover),
+            child: Image.network(
+              'https://via.placeholder.com/48',
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                // This displays a music icon if the internet fails, preventing the overflow error
+                return Container(
+                  width: 48,
+                  height: 48,
+                  color: AppColors.surfaceDefault,
+                  child: const Icon(
+                    Icons.music_note,
+                    color: AppColors.primaryGreen,
+                  ),
+                );
+              },
+            ),
           ),
           const SizedBox(width: 12),
           const Expanded(
@@ -25,13 +44,30 @@ class MiniPlayer extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Neon Horizon", style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
-                Text("Synthwave Syndicate", style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(
+                  "Neon Horizon",
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                Text(
+                  "Synthwave Syndicate",
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.play_arrow_rounded, color: AppColors.primaryGreen, size: 32),
+            icon: const Icon(
+              Icons.play_arrow_rounded,
+              color: AppColors.primaryGreen,
+              size: 32,
+            ),
             onPressed: () {},
           ),
         ],
