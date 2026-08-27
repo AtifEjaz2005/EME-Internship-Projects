@@ -66,6 +66,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '584383597577',
     projectId: 'spotify-clone-99dbb',
     storageBucket: 'spotify-clone-99dbb.firebasestorage.app',
+    androidClientId: '584383597577-47epppkdkts262qmqcqc4ng4nhtuqppj.apps.googleusercontent.com',
+    iosClientId: '584383597577-a0qijpb5p6g1q7fp155ta2b159o0a8o8.apps.googleusercontent.com',
     iosBundleId: 'com.example.spotifyClone',
   );
 

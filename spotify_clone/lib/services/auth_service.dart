@@ -35,49 +35,75 @@ class AuthService {
     required String name,
   }) async {
     try {
-      // 1. Create the user
+      // 1. Create the user in Auth (This is working for you)
       UserCredential result = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
 
-      // 2. Save additional info to Firestore
-      await _firestore.collection('users').doc(result.user!.uid).set({
-        'uid': result.user!.uid,
-        'name': name,
-        'email': email,
-        'createdAt': DateTime.now(),
-      });
+      // 2. Attempt to save to Firestore (This is where the 400 happens)
+      // We use a timeout so it doesn't spin forever if the network is bad
+      await _firestore
+          .collection('users')
+          .doc(result.user!.uid)
+          .set({
+            'uid': result.user!.uid,
+            'name': name,
+            'email': email,
+            'createdAt': FieldValue.serverTimestamp(), // Use server time
+          })
+          .timeout(const Duration(seconds: 10));
 
-      // 3. FORCE SIGN OUT immediately
-      // This prevents the StreamBuilder in main.dart from jumping to the Home Screen
+      // 3. Sign out to prevent direct jump to Home
       await _auth.signOut();
 
       return "success";
     } on FirebaseAuthException catch (e) {
-      // Return specific code for "user exists"
       return e.code;
     } catch (e) {
-      return e.toString();
+      // If it's a 400 error, we catch it here
+      print("Firestore Error: $e");
+      return "firestore-error";
     }
   }
 
   // GOOGLE SIGN IN (Assuming your SHA-1 is connected in Firebase Console)
   Future<void> signInWithGoogle() async {
     try {
+      // 1. Trigger the Google Account Picker
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      // If user closes the picker, stop here
       if (googleUser == null) return;
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+
+      // 2. Obtain auth details from the account
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      // 3. Create a new credential for Firebase
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
-      await _auth.signInWithCredential(credential);
+
+      // 4. Sign in to Firebase with that credential
+      UserCredential result = await _auth.signInWithCredential(credential);
+
+      // 5. Save/Update user in Firestore (Background task)
+      _firestore.collection('users').doc(result.user!.uid).set({
+        'uid': result.user!.uid,
+        'name': result.user!.displayName,
+        'email': result.user!.email,
+        'lastLogin': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)).catchError((e) => print("Firestore Error: $e"));
+
     } catch (e) {
-      print(e);
+      print("CRITICAL GOOGLE ERROR: $e");
     }
   }
 
-  Future<void> signOut() => _auth.signOut();
+  // Logout must also sign out of Google to show the picker next time
+  Future<void> signOut() async {
+    await _googleSignIn.signOut();
+    await _auth.signOut();
+  }
 }

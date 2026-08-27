@@ -87,9 +87,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.waves_rounded, color: AppColors.primaryGreen, size: 70),
+                const Icon(Icons.waves_rounded, color: AppColors.primaryGreen, size: 80),
                 const SizedBox(height: 10),
-                const Text("Veyra", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+                const Text("Veyra", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                 const SizedBox(height: 25),
 
                 _buildTextField(_nameController, "Full Name", Icons.person_outline),
