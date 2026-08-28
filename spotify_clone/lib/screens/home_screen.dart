@@ -26,18 +26,44 @@ class HomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text("Veyra",
-                    style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  SizedBox(
+                    height: 55,
+                    child: Image.asset(
+                      'lib/assets/wordmark.png',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
                   Row(
                     children: [
-                      IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none, color: AppColors.textPrimary)),
-                      const CircleAvatar(radius: 16, backgroundColor: AppColors.surfaceHigh, child: Icon(Icons.person, size: 20, color: Colors.white)),
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(
+                          Icons.notifications_none,
+                          color: AppColors.textPrimary,
+                          size: 30,
+                        ),
+                      ),
+                      const CircleAvatar(
+                        backgroundColor: Colors.transparent,
+                        child: Icon(
+                          Icons.person,
+                          size: 30,
+                          color: Colors.white,
+                        ),
+                      ),
                     ],
-                  )
+                  ),
                 ],
               ),
-              const SizedBox(height: 24),
-              Text(_getGreeting(), style: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+              const SizedBox(height: 15),
+              Text(
+                _getGreeting(),
+                style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
 
               const SizedBox(height: 24),
 
@@ -48,13 +74,13 @@ class HomeScreen extends StatelessWidget {
                 crossAxisCount: 2,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 3,
-                children: [
+                childAspectRatio: 2.8,
+                 children: [
+                  _buildQuickAccessTile("Chill Vibes", Icons.playlist_play),
+                  _buildQuickAccessTile("Coding Flow", Icons.playlist_play),
+                  _buildQuickAccessTile("Gym Mix", Icons.playlist_play),
+                  _buildQuickAccessTile("Liked Songs", Icons.favorite, isGreen: true),
                   _buildQuickAccessTile("Discover Weekly", Icons.auto_awesome),
-                  _buildQuickAccessTile("Release Radar", Icons.e_mobiledata),
-                  _buildQuickAccessTile("Daily Mix 1", Icons.favorite),
-                  _buildQuickAccessTile("Liked Songs", Icons.favorite_border),
-                  _buildQuickAccessTile("On Repeat", Icons.repeat),
                   _buildQuickAccessTile("Recently Played", Icons.history),
                 ],
               ),
@@ -69,9 +95,21 @@ class HomeScreen extends StatelessWidget {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: const [
-                    AlbumCard(title: "Chill Electronic", subtitle: "Your weekly mixtape of discoveries", imageUrl: "https://via.placeholder.com/160"),
-                    AlbumCard(title: "Synthwave Classics", subtitle: "Retro-futuristic beats", imageUrl: "https://via.placeholder.com/160"),
-                    AlbumCard(title: "Night Drive Vibes", subtitle: "Perfect for late night roads", imageUrl: "https://via.placeholder.com/160"),
+                    AlbumCard(
+                      title: "Chill Electronic",
+                      subtitle: "Your weekly mixtape",
+                      bgColor: Color(0xFF2E3B4E),
+                    ),
+                    AlbumCard(
+                      title: "Synthwave Classics",
+                      subtitle: "Retro-futuristic",
+                      bgColor: Color(0xFF4E2E3B),
+                    ),
+                    AlbumCard(
+                      title: "Night Drive",
+                      subtitle: "For the road",
+                      bgColor: Color(0xFF2E4E3B),
+                    ),
                   ],
                 ),
               ),
@@ -86,9 +124,21 @@ class HomeScreen extends StatelessWidget {
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: const [
-                    AlbumCard(title: "Analog Dreams", subtitle: "Neon Voyager", imageUrl: "https://via.placeholder.com/160"),
-                    AlbumCard(title: "Neon Horizon", subtitle: "Synthwave Syndicate", imageUrl: "https://via.placeholder.com/160"),
-                    AlbumCard(title: "Desert Synth", subtitle: "Neon Voyager", imageUrl: "https://via.placeholder.com/160"),
+                    AlbumCard(
+                      title: "Analog Dreams",
+                      subtitle: "Neon Voyager",
+                      bgColor: Color(0xFF3F2E4E),
+                    ),
+                    AlbumCard(
+                      title: "Neon Horizon",
+                      subtitle: "Synthwave Syndicate",
+                      bgColor: Color(0xFF4E462E),
+                    ),
+                    AlbumCard(
+                      title: "Desert Synth",
+                      subtitle: "Neon Voyager",
+                      bgColor: Color(0xFF4E462E),
+                    ),
                   ],
                 ),
               ),
@@ -101,7 +151,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickAccessTile(String title, IconData icon) {
+  Widget _buildQuickAccessTile(
+    String title,
+    IconData icon, {
+    bool isGreen = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceDefault,
@@ -109,16 +163,27 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 56,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceHigh,
-              borderRadius: BorderRadius.only(topLeft: Radius.circular(8), bottomLeft: Radius.circular(8)),
-            ),
-            child: Icon(icon, color: AppColors.primaryGreen),
+          const SizedBox(
+            width: 14,
+          ),
+          Icon(
+            icon,
+            color: isGreen ? AppColors.primaryGreen : AppColors.textPrimary,
+            size: 28,
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold))),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );
@@ -128,8 +193,22 @@ class HomeScreen extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold)),
-        const Text("See All", style: TextStyle(color: AppColors.primaryGreen, fontSize: 12, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const Text(
+          "See All",
+          style: TextStyle(
+            color: AppColors.primaryGreen,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ],
     );
   }

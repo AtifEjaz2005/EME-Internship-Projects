@@ -4,14 +4,14 @@ import '../themes/app_colors.dart';
 class AlbumCard extends StatelessWidget {
   final String title;
   final String subtitle;
-  final String imageUrl;
+  final Color bgColor;
   final double size;
 
   const AlbumCard({
     super.key,
     required this.title,
     required this.subtitle,
-    required this.imageUrl,
+    required this.bgColor,
     this.size = 160,
   });
 
@@ -25,14 +25,12 @@ class AlbumCard extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: Image.network(
-              imageUrl,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => Container(
-                width: size, height: size, color: AppColors.surfaceHigh,
-                child: const Icon(Icons.music_note, color: AppColors.primaryGreen),
+            child: Container(
+              width: 160,
+              height: 160,
+              color: bgColor, // Use the distinct color here
+              child: const Center(
+                child: Icon(Icons.music_note, color: Colors.white, size: 40),
               ),
             ),
           ),
