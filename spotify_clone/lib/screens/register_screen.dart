@@ -28,22 +28,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.info_outline, color: AppColors.primaryGreen, size: 48),
+              const Icon(
+                Icons.info_outline,
+                color: AppColors.primaryGreen,
+                size: 48,
+              ),
               const SizedBox(height: 16),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: TextButton(
                   onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(backgroundColor: AppColors.primaryGreen),
-                  child: const Text("CLOSE", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  style: TextButton.styleFrom(
+                    backgroundColor: AppColors.primaryGreen,
+                  ),
+                  child: const Text(
+                    "CLOSE",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -52,7 +67,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _handleRegister() async {
-    if (_emailController.text.isEmpty || _passwordController.text.isEmpty || _nameController.text.isEmpty) return;
+    if (_emailController.text.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _nameController.text.isEmpty)
+      return;
 
     setState(() => _isLoading = true);
     String result = await AuthService().signUp(
@@ -66,7 +84,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       // Show success and go back to login
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Registration Successful! Please login.")),
+          const SnackBar(
+            content: Text("Registration Successful! Please login."),
+          ),
         );
         Navigator.pop(context); // Goes back to Login Screen
       }
@@ -81,33 +101,68 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Center( // MIDDLES THE FORM
+        child: Center(
+          // MIDDLES THE FORM
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.waves_rounded, color: AppColors.primaryGreen, size: 80),
-                const SizedBox(height: 10),
-                const Text("Veyra", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-                const SizedBox(height: 25),
+                const SizedBox(height: 40),
 
-                _buildTextField(_nameController, "Full Name", Icons.person_outline),
+                // 1. SYMBOL IMAGE
+                SizedBox(
+                  height: 80,
+                  child: Image.asset('lib/assets/symbol.png', fit: BoxFit.contain),
+                ),
+
+                const SizedBox(height: 10),
+
+                // 2. LOGO/WORDMARK IMAGE
+                SizedBox(
+                  height: 50,
+                  child: Image.asset('lib/assets/wordmark.png', fit: BoxFit.contain),
+                ),
+
+                const SizedBox(height: 40),
+
+                _buildTextField(
+                  _nameController,
+                  "Full Name",
+                  Icons.person_outline,
+                ),
                 const SizedBox(height: 16),
-                _buildTextField(_emailController, "Email", Icons.email_outlined),
+                _buildTextField(
+                  _emailController,
+                  "Email",
+                  Icons.email_outlined,
+                ),
                 const SizedBox(height: 16),
-                _buildTextField(_passwordController, "Password", Icons.lock_outline, isObscure: true),
+                _buildTextField(
+                  _passwordController,
+                  "Password",
+                  Icons.lock_outline,
+                  isObscure: true,
+                ),
 
                 const SizedBox(height: 32),
 
                 _isLoading
-                  ? const CircularProgressIndicator(color: AppColors.primaryGreen)
-                  : PrimaryButton(label: "Create Account", onPressed: _handleRegister),
+                    ? const CircularProgressIndicator(
+                        color: AppColors.primaryGreen,
+                      )
+                    : PrimaryButton(
+                        label: "Create Account",
+                        onPressed: _handleRegister,
+                      ),
 
                 const SizedBox(height: 24),
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text("Already have an account? Login", style: TextStyle(color: AppColors.primaryGreen)),
+                  child: const Text(
+                    "Already have an account? Login",
+                    style: TextStyle(color: AppColors.primaryGreen),
+                  ),
                 ),
               ],
             ),
@@ -117,7 +172,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String hint, IconData icon, {bool isObscure = false}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String hint,
+    IconData icon, {
+    bool isObscure = false,
+  }) {
     return TextField(
       controller: controller,
       obscureText: isObscure,
@@ -128,7 +188,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         hintStyle: const TextStyle(color: AppColors.textMuted),
         filled: true,
         fillColor: AppColors.surfaceLow,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }

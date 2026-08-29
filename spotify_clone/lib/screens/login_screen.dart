@@ -95,20 +95,21 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             children: [
               const SizedBox(height: 60),
-              const Icon(
-                Icons.waves_rounded,
-                color: AppColors.primaryGreen,
-                size: 80,
+
+              // 1. REPLACED WAVES ICON WITH IMAGE
+              SizedBox(
+                height: 80,
+                child: Image.asset('lib/assets/symbol.png', fit: BoxFit.contain),
               ),
+
               const SizedBox(height: 20),
-              const Text(
-                "Veyra",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
+
+              // 2. REPLACED TEXT TITLE WITH WORDMARK IMAGE
+              SizedBox(
+                height: 50,
+                child: Image.asset('lib/assets/wordmark.png', fit: BoxFit.contain),
               ),
+
               const SizedBox(height: 40),
 
               _buildTextField(_emailController, "Email", Icons.email_outlined),
@@ -143,9 +144,13 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 24),
 
               // GOOGLE SIGN IN
-              _buildSocialButton("Continue with Google", Icons.g_mobiledata, () async {
-                await AuthService().signInWithGoogle();
-              }),
+              _buildSocialButton(
+                "Continue with Google",
+                Icons.g_mobiledata,
+                () async {
+                  await AuthService().signInWithGoogle();
+                },
+              ),
 
               const SizedBox(height: 20),
               TextButton(
@@ -192,18 +197,18 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // Add 'VoidCallback onTap' as the third argument here
-Widget _buildSocialButton(String label, IconData icon, VoidCallback onTap) {
-  return OutlinedButton.icon(
-    onPressed: onTap, // Now it uses the function we pass to it
-    icon: Icon(icon, color: Colors.white, size: 30),
-    label: Text(label, style: const TextStyle(color: AppColors.textPrimary)),
-    style: OutlinedButton.styleFrom(
-      minimumSize: const Size(double.infinity, 52),
-      side: const BorderSide(color: AppColors.surfaceHigh),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
-    ),
-  );
-}
+  Widget _buildSocialButton(String label, IconData icon, VoidCallback onTap) {
+    return OutlinedButton.icon(
+      onPressed: onTap, // Now it uses the function we pass to it
+      icon: Icon(icon, color: Colors.white, size: 30),
+      label: Text(label, style: const TextStyle(color: AppColors.textPrimary)),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size(double.infinity, 52),
+        side: const BorderSide(color: AppColors.surfaceHigh),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+      ),
+    );
+  }
 
   void _showForgotPasswordDialog() {
     final resetEmailController = TextEditingController();

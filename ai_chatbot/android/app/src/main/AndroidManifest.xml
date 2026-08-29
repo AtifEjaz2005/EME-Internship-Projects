@@ -12,7 +12,7 @@
 <uses-feature android:name="android.hardware.camera.autofocus" />
 
     <application
-        android:label="NEXA"
+        android:label="Nexa"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
