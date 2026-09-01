@@ -69,8 +69,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _handleRegister() async {
     if (_emailController.text.isEmpty ||
         _passwordController.text.isEmpty ||
-        _nameController.text.isEmpty)
+        _nameController.text.isEmpty) {
       return;
+    }
 
     setState(() => _isLoading = true);
     String result = await AuthService().signUp(

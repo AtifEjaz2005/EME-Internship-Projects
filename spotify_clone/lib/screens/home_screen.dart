@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../themes/app_colors.dart';
 import '../widgets/album_card.dart';
+import '../screens/notification_screen.dart';
+import '../screens/profile_screen.dart';
+import '../services/playlist_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -35,20 +39,53 @@ class HomeScreen extends StatelessWidget {
                   ),
                   Row(
                     children: [
-                      IconButton(
-                        onPressed: () {},
-                        icon: const Icon(
-                          Icons.notifications_none,
-                          color: AppColors.textPrimary,
-                          size: 30,
+                      // Notification Icon with Green Dot
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationScreen(),
+                          ),
+                        ),
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(
+                              Icons.notifications_none,
+                              color: AppColors.textPrimary,
+                              size: 30,
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryGreen,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: AppColors.primaryBackground,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const CircleAvatar(
-                        backgroundColor: Colors.transparent,
-                        child: Icon(
-                          Icons.person,
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ProfileScreen(),
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.account_circle_rounded,
+                          color: AppColors.textPrimary,
                           size: 30,
-                          color: Colors.white,
                         ),
                       ),
                     ],
@@ -67,24 +104,44 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              // 2. Quick Access Section (2x3 Grid)
-              GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 2.8,
-                 children: [
-                  _buildQuickAccessTile("Chill Vibes", Icons.playlist_play),
-                  _buildQuickAccessTile("Coding Flow", Icons.playlist_play),
-                  _buildQuickAccessTile("Gym Mix", Icons.playlist_play),
-                  _buildQuickAccessTile("Liked Songs", Icons.favorite, isGreen: true),
-                  _buildQuickAccessTile("Discover Weekly", Icons.auto_awesome),
-                  _buildQuickAccessTile("Recently Played", Icons.history),
-                ],
-              ),
+              StreamBuilder<List<String>>(
+                stream: PlaylistService().getPlaylists(),
+                builder: (context, snapshot) {
+                  // 1. Get user playlists or empty list
+                  List<String> userPlaylists = snapshot.data ?? [];
 
+                  // 2. Limit to top 4 and add the 2 "Must" tiles
+                  List<String> displayList = userPlaylists.take(4).toList();
+                  displayList.add("Other Playlists");
+                  displayList.add("Liked Songs");
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: displayList.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 2.8,
+                        ),
+                    itemBuilder: (context, index) {
+                      bool isUserPlaylist = index < (displayList.length - 2);
+                      bool isLiked = displayList[index] == "Liked Songs";
+
+                      return _buildQuickAccessTile(
+                        displayList[index],
+                        isUserPlaylist
+                            ? 'lib/assets/library.svg'
+                            : (isLiked ? 'favorite' : 'playlist_play'),
+                        isSvg: isUserPlaylist,
+                        isGreen: isLiked,
+                      );
+                    },
+                  );
+                },
+              ),
               const SizedBox(height: 32),
 
               // 3. Made For You Carousel
@@ -153,7 +210,8 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildQuickAccessTile(
     String title,
-    IconData icon, {
+    dynamic iconData, {
+    bool isSvg = false,
     bool isGreen = false,
   }) {
     return Container(
@@ -163,22 +221,31 @@ class HomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const SizedBox(
-            width: 14,
-          ),
-          Icon(
-            icon,
-            color: isGreen ? AppColors.primaryGreen : AppColors.textPrimary,
-            size: 28,
-          ),
+          const SizedBox(width: 14),
+          isSvg
+              ? SvgPicture.asset(
+                  iconData,
+                  width: 24,
+                  colorFilter: const ColorFilter.mode(
+                    AppColors.textPrimary,
+                    BlendMode.srcIn,
+                  ),
+                )
+              : Icon(
+                  iconData == 'favorite' ? Icons.favorite : Icons.playlist_play,
+                  color: isGreen
+                      ? AppColors.primaryGreen
+                      : AppColors.textPrimary,
+                  size: 24,
+                ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               title,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

@@ -77,7 +77,8 @@ class AuthService {
       if (googleUser == null) return;
 
       // 2. Obtain auth details from the account
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
 
       // 3. Create a new credential for Firebase
       final AuthCredential credential = GoogleAuthProvider.credential(
@@ -89,16 +90,31 @@ class AuthService {
       UserCredential result = await _auth.signInWithCredential(credential);
 
       // 5. Save/Update user in Firestore (Background task)
-      _firestore.collection('users').doc(result.user!.uid).set({
-        'uid': result.user!.uid,
-        'name': result.user!.displayName,
-        'email': result.user!.email,
-        'lastLogin': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true)).catchError((e) => print("Firestore Error: $e"));
-
+      _firestore
+          .collection('users')
+          .doc(result.user!.uid)
+          .set({
+            'uid': result.user!.uid,
+            'name': result.user!.displayName,
+            'email': result.user!.email,
+            'lastLogin': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true))
+          .catchError((e) => print("Firestore Error: $e"));
     } catch (e) {
       print("CRITICAL GOOGLE ERROR: $e");
     }
+  }
+
+  Future<Map<String, dynamic>?> getCurrentUserData() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot doc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      return doc.data() as Map<String, dynamic>?;
+    }
+    return null;
   }
 
   // Logout must also sign out of Google to show the picker next time
