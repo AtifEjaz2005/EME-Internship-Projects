@@ -5,6 +5,7 @@ import '../widgets/album_card.dart';
 import '../screens/notification_screen.dart';
 import '../screens/profile_screen.dart';
 import '../services/playlist_service.dart';
+import '../screens/playlist_detail_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -119,24 +120,36 @@ class HomeScreen extends StatelessWidget {
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: displayList.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 2.8,
-                        ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 2.8,
+                    ),
                     itemBuilder: (context, index) {
+                      String name = displayList[index];
                       bool isUserPlaylist = index < (displayList.length - 2);
-                      bool isLiked = displayList[index] == "Liked Songs";
+                      bool isLiked = name == "Liked Songs";
 
-                      return _buildQuickAccessTile(
-                        displayList[index],
-                        isUserPlaylist
-                            ? 'lib/assets/library.svg'
-                            : (isLiked ? 'favorite' : 'playlist_play'),
-                        isSvg: isUserPlaylist,
-                        isGreen: isLiked,
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PlaylistDetailScreen(
+                                playlistName: name,
+                                isLikedSongs: isLiked,
+                              ),
+                            ),
+                          );
+                        },
+                        child: _buildQuickAccessTile(
+                          name,
+                          isUserPlaylist ? 'lib/assets/library.svg' :
+                          (isLiked ? Icons.favorite : Icons.playlist_play),
+                          isSvg: isUserPlaylist,
+                          isGreen: isLiked,
+                        ),
                       );
                     },
                   );
