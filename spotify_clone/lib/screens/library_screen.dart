@@ -3,6 +3,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../themes/app_colors.dart';
 import '../services/playlist_service.dart';
 import 'playlist_detail_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
@@ -44,43 +47,49 @@ class LibraryScreen extends StatelessWidget {
 
           // 2. LIBRARY LIST
           Expanded(
-            child: StreamBuilder<List<String>>(
-              stream: PlaylistService().getPlaylists(),
+            child: StreamBuilder<QuerySnapshot>( // Changed to QuerySnapshot to get IDs
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(FirebaseAuth.instance.currentUser!.uid)
+                  .collection('playlists')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
               builder: (context, snapshot) {
-                final playlists = snapshot.data ?? [];
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+
+                final docs = snapshot.data!.docs;
 
                 return ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: [
-                    // A. SPECIAL LIKED SONGS TILE
+                    // A. LIKED SONGS (Fixed, no delete option)
                     _buildLibraryItem(
                       context,
                       title: "Liked Songs",
                       subtitle: "Playlist",
                       isLiked: true,
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => const PlaylistDetailScreen(
-                            playlistName: "Liked Songs",
-                            isLikedSongs: true
-                          )
-                        ));
-                      },
+                      onTap: () => Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => const PlaylistDetailScreen(playlistName: "Liked Songs", isLikedSongs: true)
+                      )),
                     ),
 
-                    // B. DYNAMIC USER PLAYLISTS
-                    ...playlists.map((name) => _buildLibraryItem(
-                      context,
-                      title: name,
-                      subtitle: "Playlist • Veyra User",
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => PlaylistDetailScreen(playlistName: name)
-                        ));
-                      },
-                    )),
+                    // B. DYNAMIC PLAYLISTS WITH DELETE OPTION
+                    ...docs.map((doc) {
+                      String name = doc['name'];
+                      String id = doc.id; // We need this ID to delete it
 
-                    const SizedBox(height: 120), // Space for MiniPlayer
+                      return _buildLibraryItem(
+                        context,
+                        title: name,
+                        subtitle: "Playlist • MUSIKI User",
+                        playlistId: id, // Pass ID for the delete menu
+                        onTap: () => Navigator.push(context, MaterialPageRoute(
+                          builder: (context) => PlaylistDetailScreen(playlistName: name)
+                        )),
+                      );
+                    }),
+
+                    const SizedBox(height: 120),
                   ],
                 );
               },
@@ -95,32 +104,92 @@ class LibraryScreen extends StatelessWidget {
     required String title,
     required String subtitle,
     bool isLiked = false,
+    String? playlistId, // Optional ID
     required VoidCallback onTap
   }) {
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(vertical: 4),
       leading: Container(
-        width: 56,
-        height: 56,
+        width: 56, height: 56,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
-          gradient: isLiked ? const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF450AF5), Color(0xFFC4EFD9)],
-          ) : null,
-          color: isLiked ? null : AppColors.surfaceDefault,
+          color: AppColors.surfaceDefault,
+          gradient: isLiked ? const LinearGradient(colors: [Color(0xFF450AF5), Color(0xFFC4EFD9)]) : null,
         ),
         child: Center(
           child: isLiked
-            ? const Icon(Icons.favorite, color: Colors.white, size: 28)
+            ? const Icon(Icons.favorite, color: Colors.white)
             : SvgPicture.asset('lib/assets/library.svg', width: 24, colorFilter: const ColorFilter.mode(Colors.white54, BlendMode.srcIn)),
         ),
       ),
-      title: Text(title,
-        style: TextStyle(color: isLiked ? AppColors.primaryGreen : Colors.white, fontWeight: FontWeight.bold)),
+      title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+
+      // THREE DOTS DROPDOWN MENU
+      trailing: isLiked ? null : PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, color: Colors.white70),
+        color: AppColors.surfaceHigh,
+        onSelected: (value) {
+          if (value == 'delete') {
+            _showDeleteConfirmation(context, playlistId!, title);
+          }
+        },
+        itemBuilder: (BuildContext context) => [
+          const PopupMenuItem(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                SizedBox(width: 10),
+                Text("Delete Playlist", style: TextStyle(color: Colors.white)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Confirmation Alert (Matches your Veyra/MUSIKI notification style)
+  void _showDeleteConfirmation(BuildContext context, String id, String name) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: AppColors.surfaceDefault,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 60),
+              const SizedBox(height: 16),
+              Text("Delete '$name'?", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              const Text("This will permanently remove the playlist and all songs inside it.",
+                textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: TextButton(
+                  onPressed: () async {
+                    await PlaylistService().deletePlaylist(id);
+                    Navigator.pop(context);
+                  },
+                  style: TextButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
+                  child: const Text("DELETE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("CANCEL", style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
