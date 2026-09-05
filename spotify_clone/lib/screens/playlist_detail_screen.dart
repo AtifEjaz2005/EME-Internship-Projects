@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../services/player_service.dart';
 
 class PlaylistDetailScreen extends StatelessWidget {
   final String playlistName;
@@ -94,26 +96,47 @@ class PlaylistDetailScreen extends StatelessWidget {
           ),
 
           // 3. TRACKLIST (Mock data for now)
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  leading: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: Container(
-                      width: 50, height: 50, color: Colors.white10,
-                      child: const Icon(Icons.music_note, color: Colors.white54),
-                    ),
-                  ),
-                  title: Text("Track ${index + 1}", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
-                  subtitle: const Text("Veyra Artist", style: TextStyle(color: AppColors.textMuted)),
-                  trailing: const Icon(Icons.more_vert, color: Colors.white70),
-                );
-              },
-              childCount: 15,
+          StreamBuilder<QuerySnapshot>(
+  stream: FirebaseFirestore.instance.collection('songs').snapshots(),
+  builder: (context, snapshot) {
+    if (!snapshot.hasData) return const SliverToBoxAdapter(child: Center(child: CircularProgressIndicator()));
+
+    final songs = snapshot.data!.docs;
+
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          var songData = songs[index].data() as Map<String, dynamic>;
+          String id = songs[index].id;
+          String title = songData['title'] ?? 'Unknown';
+          String artist = songData['artist'] ?? 'Unknown';
+          String url = songData['audioUrl'] ?? '';
+          String image = songData['imageUrl'] ?? '';
+
+          return ListTile(
+            onTap: () {
+              // THIS IS WHERE THE MAGIC HAPPENS
+              PlayerService().playSong(id, url, title, artist,image);
+            },
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            leading: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: Image.network(
+                image,
+                width: 50, height: 50, fit: BoxFit.cover,
+                errorBuilder: (context, e, s) => Container(width: 50, height: 50, color: Colors.white10, child: const Icon(Icons.music_note)),
+              ),
             ),
-          ),
+            title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+            subtitle: Text(artist, style: const TextStyle(color: AppColors.textMuted)),
+            trailing: const Icon(Icons.more_vert, color: Colors.white70),
+          );
+        },
+        childCount: songs.length,
+      ),
+    );
+  },
+),
           const SliverToBoxAdapter(child: SizedBox(height: 120)), // Space for MiniPlayer
         ],
       ),

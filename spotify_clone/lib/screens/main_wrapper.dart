@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:spotify_clone/screens/library_screen.dart';
+import 'package:spotify_clone/screens/search_screen.dart';
 import '../themes/app_colors.dart';
 import '../widgets/mini_player.dart';
 import 'package:spotify_clone/screens/home_screen.dart';
@@ -19,8 +21,8 @@ class _MainWrapperState extends State<MainWrapper> {
 
   final List<Widget> _pages = [
     const HomeScreen(),
-    const Center(child: Text("Search", style: TextStyle(color: Colors.white))),
-    const Center(child: Text("Library", style: TextStyle(color: Colors.white))),
+    const SearchScreen(),
+    const LibraryScreen(),
   ];
 
   @override
@@ -161,14 +163,14 @@ class _MainWrapperState extends State<MainWrapper> {
               : Icon(
                   icon,
                   color: isSelected ? activeColor : inactiveColor,
-                  size: 32, // Increased from 28
+                  size: 30, // Increased from 28
                 ),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
               color: isSelected ? activeColor : inactiveColor,
-              fontSize: 12, // Increased from 10
+              fontSize: 10, // Increased from 10
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
           ),
