@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/player_service.dart';
 import '../screens/now_playing_screen.dart';
-// import '../services/audio_handler.dart';
+import '../services/audio_handler.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key});
@@ -9,6 +9,13 @@ class MiniPlayer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final player = PlayerService();
+
+    try {
+      // If this line fails, it means audioHandler is not ready
+      audioHandler.playbackState;
+    } catch (e) {
+      return const SizedBox.shrink();
+    }
 
     return ValueListenableBuilder<String?>(
       valueListenable: player.currentSongTitle,
@@ -36,7 +43,8 @@ class MiniPlayer extends StatelessWidget {
                   color: bgColor.withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Stack( // Added Stack to place the progress bar at the bottom
+                child: Stack(
+                  // Added Stack to place the progress bar at the bottom
                   children: [
                     // 1. THE MAIN CONTENT (Row with info and buttons)
                     Padding(
@@ -49,7 +57,10 @@ class MiniPlayer extends StatelessWidget {
                               width: 48,
                               height: 48,
                               color: Colors.white10,
-                              child: const Icon(Icons.music_note, color: Colors.white),
+                              child: const Icon(
+                                Icons.music_note,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -61,9 +72,10 @@ class MiniPlayer extends StatelessWidget {
                                 Text(
                                   title,
                                   style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -72,7 +84,9 @@ class MiniPlayer extends StatelessWidget {
                                   builder: (context, artist, _) => Text(
                                     artist ?? "Unknown Artist",
                                     style: const TextStyle(
-                                        color: Colors.white70, fontSize: 13),
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -80,9 +94,17 @@ class MiniPlayer extends StatelessWidget {
                               ],
                             ),
                           ),
-                          const Icon(Icons.devices_outlined, color: Colors.white, size: 24),
+                          const Icon(
+                            Icons.devices_outlined,
+                            color: Colors.white,
+                            size: 24,
+                          ),
                           const SizedBox(width: 16),
-                          const Icon(Icons.add_circle_outline, color: Colors.white, size: 26),
+                          const Icon(
+                            Icons.add_circle_outline,
+                            color: Colors.white,
+                            size: 26,
+                          ),
                           const SizedBox(width: 8),
                           ValueListenableBuilder<bool>(
                             valueListenable: player.isPlaying,
@@ -90,7 +112,9 @@ class MiniPlayer extends StatelessWidget {
                               return IconButton(
                                 onPressed: () => player.togglePlay(),
                                 icon: Icon(
-                                  isPlaying ? Icons.pause : Icons.play_arrow_rounded,
+                                  isPlaying
+                                      ? Icons.pause
+                                      : Icons.play_arrow_rounded,
                                   color: Colors.white,
                                   size: 34,
                                 ),
@@ -118,14 +142,17 @@ class MiniPlayer extends StatelessWidget {
                               // Calculate percentage of song played
                               double progress = 0.0;
                               if (duration.inMilliseconds > 0) {
-                                progress = position.inMilliseconds / duration.inMilliseconds;
+                                progress =
+                                    position.inMilliseconds /
+                                    duration.inMilliseconds;
                               }
 
                               return Container(
                                 height: 2, // Very thin line
                                 width: double.infinity,
                                 decoration: BoxDecoration(
-                                  color: Colors.white24, // Background of the bar
+                                  color:
+                                      Colors.white24, // Background of the bar
                                   borderRadius: BorderRadius.circular(1),
                                 ),
                                 child: FractionallySizedBox(

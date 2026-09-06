@@ -85,6 +85,7 @@ class _CreatePlaylistScreenState extends State<CreatePlaylistScreen> {
                       await PlaylistService().createPlaylist(
                         _controller.text,
                       ); // Saves to Firebase
+                      if (!context.mounted) return;
                       if (mounted) Navigator.pop(context);
                     }
                   },

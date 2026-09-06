@@ -76,7 +76,9 @@ class _LoginScreenState extends State<LoginScreen> {
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
-    setState(() => _isLoading = false);
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
 
     if (result != "success") {
       _showErrorDialog(
@@ -99,7 +101,10 @@ class _LoginScreenState extends State<LoginScreen> {
               // 1. REPLACED WAVES ICON WITH IMAGE
               SizedBox(
                 height: 80,
-                child: Image.asset('lib/assets/symbol.png', fit: BoxFit.contain),
+                child: Image.asset(
+                  'lib/assets/symbol.png',
+                  fit: BoxFit.contain,
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -107,7 +112,10 @@ class _LoginScreenState extends State<LoginScreen> {
               // 2. REPLACED TEXT TITLE WITH WORDMARK IMAGE
               SizedBox(
                 height: 50,
-                child: Image.asset('lib/assets/wordmark.png', fit: BoxFit.contain),
+                child: Image.asset(
+                  'lib/assets/wordmark.png',
+                  fit: BoxFit.contain,
+                ),
               ),
 
               const SizedBox(height: 40),
@@ -280,6 +288,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       await AuthService().resetPassword(
                         resetEmailController.text.trim(),
                       );
+                      if (!context.mounted) return;
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

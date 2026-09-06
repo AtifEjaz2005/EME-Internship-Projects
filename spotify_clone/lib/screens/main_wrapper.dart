@@ -242,6 +242,7 @@ class _MainWrapperState extends State<MainWrapper> {
                 child: TextButton(
                   onPressed: () async {
                     await AuthService().signOut();
+                    if (!context.mounted) return;
                     if (mounted) Navigator.pop(context);
                   },
                   style: TextButton.styleFrom(

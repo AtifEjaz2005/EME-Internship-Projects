@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../widgets/mini_player_color.dart';
 import 'audio_handler.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 
 class PlayerService {
   static final PlayerService _instance = PlayerService._internal();
@@ -15,17 +16,23 @@ class PlayerService {
   ValueNotifier<String?> currentSongTitle = ValueNotifier(null);
   ValueNotifier<String?> currentArtist = ValueNotifier(null);
   ValueNotifier<String?> currentImageUrl = ValueNotifier(null);
-  ValueNotifier<Color> miniPlayerBgColor = ValueNotifier(const Color(0xFF222326));
+  ValueNotifier<Color> miniPlayerBgColor = ValueNotifier(
+    const Color(0xFF222326),
+  );
 
   ValueNotifier<bool> isShuffle = ValueNotifier(false);
   ValueNotifier<LoopMode> loopMode = ValueNotifier(LoopMode.off);
 
-  // STREAMS FROM AUDIO HANDLER
-  // Now using MusikiAudioHandler via the import
   Stream<Duration> get positionStream => audioHandler.positionStream;
   Stream<Duration?> get durationStream => audioHandler.durationStream;
 
-  Future<void> playSong(String id, String url, String title, String artist, String image) async {
+  Future<void> playSong(
+    String id,
+    String url,
+    String title,
+    String artist,
+    String image,
+  ) async {
     currentSongId.value = id;
     currentSongTitle.value = title;
     currentArtist.value = artist;
@@ -64,14 +71,15 @@ class PlayerService {
   }
 
   void toggleRepeat() {
-    LoopMode newMode = (loopMode.value == LoopMode.off) ? LoopMode.one : LoopMode.off;
+    LoopMode newMode = (loopMode.value == LoopMode.off)
+        ? LoopMode.one
+        : LoopMode.off;
     loopMode.value = newMode;
     audioHandler.setLoopMode(newMode);
   }
 
   void toggleShuffle() {
     isShuffle.value = !isShuffle.value;
-    // Using the renamed method from our handler
     audioHandler.setShuffleModeEnabled(isShuffle.value);
   }
 
@@ -80,5 +88,61 @@ class PlayerService {
 
   void dispose() {
     audioHandler.stop();
+  }
+
+  Future<void> playYoutubeSong(
+    String videoId,
+    String title,
+    String artist,
+    String image,
+  ) async {
+    final yt = YoutubeExplode();
+
+    try {
+      currentSongTitle.value = title;
+      currentArtist.value = artist;
+      currentImageUrl.value = image;
+      miniPlayerBgColor.value = MiniPlayerColor.getNewColor();
+
+      debugPrint('Getting YouTube manifest for: $videoId');
+
+      var manifest = await yt.videos.streamsClient.getManifest(
+        videoId,
+        ytClients: [YoutubeApiClient.mweb],
+      );
+
+      if (manifest.audioOnly.isEmpty) {
+        throw Exception('No audio streams available');
+      }
+
+      final audioStream = manifest.audioOnly.withHighestBitrate();
+
+      final audioUrl = audioStream.url.toString();
+
+      debugPrint('========== YOUTUBE AUDIO ==========');
+      debugPrint('Video ID: $videoId');
+      debugPrint('Container: ${audioStream.container}');
+      debugPrint('Codec: ${audioStream.audioCodec}');
+      debugPrint('Bitrate: ${audioStream.bitrate}');
+      debugPrint('URL: ${audioStream.url}');
+      debugPrint('===================================');
+
+      await audioHandler.playMediaItem(
+        MediaItem(
+          id: audioUrl,
+          album: 'YouTube Music',
+          title: title,
+          artist: artist,
+          artUri: Uri.parse(image),
+        ),
+      );
+
+      isPlaying.value = true;
+    } catch (e, stackTrace) {
+      debugPrint('YouTube playback failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
+    } finally {
+      yt.close();
+    }
   }
 }

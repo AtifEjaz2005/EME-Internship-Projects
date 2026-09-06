@@ -1,5 +1,6 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:flutter/material.dart';
 
 // The global instance must be of type MusikiAudioHandler to see custom getters
 late MusikiAudioHandler audioHandler;
@@ -19,16 +20,23 @@ class MusikiAudioHandler extends BaseAudioHandler with SeekHandler {
   void setLoopMode(LoopMode mode) => _player.setLoopMode(mode);
 
   // Renamed to avoid conflict with AudioService's built-in setShuffleMode
-  void setShuffleModeEnabled(bool enabled) => _player.setShuffleModeEnabled(enabled);
+  void setShuffleModeEnabled(bool enabled) =>
+      _player.setShuffleModeEnabled(enabled);
 
   @override
   Future<void> playMediaItem(MediaItem mediaItem) async {
     this.mediaItem.add(mediaItem);
+
     try {
-      await _player.setAudioSource(AudioSource.uri(Uri.parse(mediaItem.id)));
-      _player.play();
-    } catch (e) {
-      print("Audio Error: $e");
+      final audioSource = AudioSource.uri(Uri.parse(mediaItem.id));
+
+      await _player.setAudioSource(audioSource);
+      await _player.play();
+    } catch (e, stackTrace) {
+      debugPrint('Final playback error: $e');
+      debugPrintStack(stackTrace: stackTrace);
+
+      rethrow;
     }
   }
 

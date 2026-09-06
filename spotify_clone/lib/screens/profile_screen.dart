@@ -50,6 +50,7 @@ class ProfileScreen extends StatelessWidget {
                 TextButton(
                   onPressed: () async {
                     await AuthService().signOut();
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                   },
                   child: const Text("Sign Out", style: TextStyle(color: Colors.redAccent, fontSize: 16, fontWeight: FontWeight.bold)),

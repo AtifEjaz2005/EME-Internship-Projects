@@ -48,6 +48,7 @@ class ForgotPasswordDialog extends StatelessWidget {
           onPressed: () async {
             if (resetEmailController.text.isEmpty) return;
             await AuthService.instance.resetPassword(resetEmailController.text);
+            if (!context.mounted) return;
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Reset link sent!")));
           },

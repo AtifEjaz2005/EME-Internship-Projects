@@ -1,8 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
 import '../widgets/category_card.dart';
 import '../services/player_service.dart';
+import '../services/youtube_service.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -26,13 +27,21 @@ class _SearchScreenState extends State<SearchScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              const Text("Search", style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text(
+                "Search",
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(height: 20),
 
               // 1. PILL SEARCH BAR (Design Spec #13)
               TextField(
                 controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val.toLowerCase()),
+                onChanged: (val) =>
+                    setState(() => _searchQuery = val.toLowerCase()),
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: "What do you want to listen to?",
@@ -41,7 +50,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   filled: true,
                   fillColor: Colors.white,
                   contentPadding: const EdgeInsets.symmetric(vertical: 15),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(30),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -49,8 +61,8 @@ class _SearchScreenState extends State<SearchScreen> {
               // 2. DYNAMIC CONTENT AREA
               Expanded(
                 child: _searchQuery.isEmpty
-                  ? _buildBrowseAll() // Show Categories if search is empty
-                  : _buildSearchResults(), // Show Songs if user is typing
+                    ? _buildBrowseAll() // Show Categories if search is empty
+                    : _buildSearchResults(), // Show Songs if user is typing
               ),
             ],
           ),
@@ -64,7 +76,14 @@ class _SearchScreenState extends State<SearchScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Browse all", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+        const Text(
+          "Browse all",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         const SizedBox(height: 16),
         Expanded(
           child: GridView.count(
@@ -88,33 +107,63 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // Backend Integration: Firestore Search
   Widget _buildSearchResults() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('songs')
-          .where('title_lowercase', isGreaterThanOrEqualTo: _searchQuery)
-          .where('title_lowercase', isLessThanOrEqualTo: '$_searchQuery\uf8ff')
-          .snapshots(),
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      // This triggers the search every time the user types
+      future: YouTubeService().searchSongs(_searchQuery),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-
-        final results = snapshot.data!.docs;
-
-        if (results.isEmpty) {
-          return const Center(child: Text("No songs found", style: TextStyle(color: AppColors.textMuted)));
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
         }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const Center(
+            child: Text(
+              "No results found",
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+
+        final results = snapshot.data!;
 
         return ListView.builder(
           itemCount: results.length,
           itemBuilder: (context, index) {
-            var data = results[index].data() as Map<String, dynamic>;
+            final song = results[index];
             return ListTile(
-              onTap: () => PlayerService().playSong(results[index].id,data['audioUrl'], data['title'], data['artist'],data['imageUrl'],),
+              onTap: () {
+                // Call the new YouTube-specific play method
+                PlayerService().playYoutubeSong(
+                  song['id'], // The YouTube Video ID
+                  song['title'], // The Title
+                  song['artist'], // The Channel Name
+                  song['imageUrl'], // The Thumbnail
+                );
+
+                // Close keyboard for better UX
+                FocusScope.of(context).unfocus();
+              },
               leading: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: Image.network(data['imageUrl'], width: 50, height: 50, fit: BoxFit.cover),
+                child: Image.network(
+                  song['imageUrl'],
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.cover,
+                ),
               ),
-              title: Text(data['title'], style: const TextStyle(color: Colors.white)),
-              subtitle: Text(data['artist'], style: const TextStyle(color: AppColors.textMuted)),
+              title: Text(
+                song['title'],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                song['artist'],
+                style: const TextStyle(color: Colors.grey),
+              ),
             );
           },
         );

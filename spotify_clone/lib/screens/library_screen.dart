@@ -176,6 +176,7 @@ class LibraryScreen extends StatelessWidget {
                 child: TextButton(
                   onPressed: () async {
                     await PlaylistService().deletePlaylist(id);
+                    if (!context.mounted) return;
                     Navigator.pop(context);
                   },
                   style: TextButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),

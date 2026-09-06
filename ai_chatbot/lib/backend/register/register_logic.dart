@@ -51,11 +51,13 @@ class RegisterLogic {
     updateUI(); // Hide loading spinner
 
     if (user != null) {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Success! Please Login.")),
       );
       goBack(); // Take user back to Login page
     } else {
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Registration Failed. Try again.")),
       );

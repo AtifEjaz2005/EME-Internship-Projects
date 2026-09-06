@@ -57,6 +57,7 @@ class _ChatScreenState extends State<ChatScreen> {
           },
           onLogout: () async {
             await AuthService.instance.signOut();
+            if (!context.mounted) return;
             if (mounted) {
               Navigator.pushAndRemoveUntil(
                 context,
