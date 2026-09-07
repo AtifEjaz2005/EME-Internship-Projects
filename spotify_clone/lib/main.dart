@@ -8,14 +8,11 @@ import 'screens/login_screen.dart';
 import 'screens/main_wrapper.dart';
 import 'services/auth_service.dart';
 import 'services/audio_handler.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await dotenv.load(fileName: ".env");
-
+  
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   audioHandler = await AudioService.init(

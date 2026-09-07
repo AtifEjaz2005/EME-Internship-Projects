@@ -1,9 +1,9 @@
-// import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
 import '../widgets/category_card.dart';
 import '../services/player_service.dart';
-import '../services/youtube_service.dart';
+import '../services/audius_provider.dart';
+import '../models/music_track.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -27,21 +27,14 @@ class _SearchScreenState extends State<SearchScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
-              const Text(
-                "Search",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+              const Text("Search",
+                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
               const SizedBox(height: 20),
 
               // 1. PILL SEARCH BAR (Design Spec #13)
               TextField(
                 controller: _searchController,
-                onChanged: (val) =>
-                    setState(() => _searchQuery = val.toLowerCase()),
+                onChanged: (val) => setState(() => _searchQuery = val),
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: "What do you want to listen to?",
@@ -52,7 +45,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   contentPadding: const EdgeInsets.symmetric(vertical: 15),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(30),
-                    borderSide: BorderSide.none,
+                    borderSide: BorderSide.none
                   ),
                 ),
               ),
@@ -61,8 +54,8 @@ class _SearchScreenState extends State<SearchScreen> {
               // 2. DYNAMIC CONTENT AREA
               Expanded(
                 child: _searchQuery.isEmpty
-                    ? _buildBrowseAll() // Show Categories if search is empty
-                    : _buildSearchResults(), // Show Songs if user is typing
+                  ? _buildBrowseAll()
+                  : _buildSearchResults(),
               ),
             ],
           ),
@@ -71,19 +64,13 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // UI for "Browse All" Categories
+  // --- BROWSE ALL UI (Kept from your previous design) ---
   Widget _buildBrowseAll() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Browse all",
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        const Text("Browse all",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
         const SizedBox(height: 16),
         Expanded(
           child: GridView.count(
@@ -105,69 +92,68 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // Backend Integration: Firestore Search
+  // --- AUDIUS INTEGRATION: Search Results ---
   Widget _buildSearchResults() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      // This triggers the search every time the user types
-      future: YouTubeService().searchSongs(_searchQuery),
+    return FutureBuilder<List<MusicTrack>>(
+      // Uses the official Audius Search API
+      future: AudiusProvider().search(_searchQuery),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          );
+          return const Center(child: CircularProgressIndicator(color: Colors.white));
         }
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(
-            child: Text(
-              "No results found",
-              style: TextStyle(color: Colors.grey),
-            ),
-          );
+        if (snapshot.hasError) {
+          return const Center(child: Text("Error searching Audius",
+            style: TextStyle(color: Colors.redAccent)));
         }
 
-        final results = snapshot.data!;
+        final results = snapshot.data ?? [];
+
+        if (results.isEmpty) {
+          return const Center(child: Text("No songs found on Audius",
+            style: TextStyle(color: AppColors.textMuted)));
+        }
 
         return ListView.builder(
           itemCount: results.length,
           itemBuilder: (context, index) {
-            final song = results[index];
+            final track = results[index];
             return ListTile(
               onTap: () {
-                // Call the new YouTube-specific play method
-                PlayerService().playYoutubeSong(
-                  song['id'], // The YouTube Video ID
-                  song['title'], // The Title
-                  song['artist'], // The Channel Name
-                  song['imageUrl'], // The Thumbnail
-                );
-
-                // Close keyboard for better UX
-                FocusScope.of(context).unfocus();
+                // Calls the updated playTrack method in PlayerService
+                PlayerService().playTrack(track);
+                FocusScope.of(context).unfocus(); // Close keyboard
               },
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
               leading: ClipRRect(
                 borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  song['imageUrl'],
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.cover,
-                ),
+                child: track.artworkUrl.isNotEmpty
+                  ? Image.network(track.artworkUrl, width: 56, height: 56, fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _buildPlaceholder())
+                  : _buildPlaceholder(),
               ),
               title: Text(
-                song['title'],
+                track.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
               ),
               subtitle: Text(
-                song['artist'],
-                style: const TextStyle(color: Colors.grey),
+                "${track.artist} • Audius",
+                style: const TextStyle(color: AppColors.textMuted)
               ),
+              trailing: const Icon(Icons.more_vert, color: Colors.white70),
             );
           },
         );
       },
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: 56, height: 56, color: AppColors.surfaceHigh,
+      child: const Icon(Icons.music_note, color: Colors.white24),
     );
   }
 }

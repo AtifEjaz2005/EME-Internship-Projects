@@ -1,10 +1,12 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart'; // Add this import
 import '../themes/app_colors.dart';
 import '../services/player_service.dart';
 import '../widgets/like_button.dart';
 
-class NowPlayingScreen extends StatefulWidget { // Changed to StatefulWidget for flicker logic
+class NowPlayingScreen extends StatefulWidget {
+  // Changed to StatefulWidget for flicker logic
   const NowPlayingScreen({super.key});
 
   @override
@@ -25,19 +27,35 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(120), // Increased height
         child: Padding(
-          padding: const EdgeInsets.only(top: 40), // LOWERED THE UI AS REQUESTED
+          padding: const EdgeInsets.only(
+            top: 40,
+          ), // LOWERED THE UI AS REQUESTED
           child: AppBar(
             backgroundColor: Colors.transparent,
             elevation: 0,
             leading: IconButton(
-              icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 40, color: Colors.white),
+              icon: const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                size: 40,
+                color: Colors.white,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
-            title: const Text("NOW PLAYING",
-                style: TextStyle(fontSize: 12, letterSpacing: 3, fontWeight: FontWeight.bold, color: AppColors.textMuted)),
+            title: const Text(
+              "NOW PLAYING",
+              style: TextStyle(
+                fontSize: 12,
+                letterSpacing: 3,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textMuted,
+              ),
+            ),
             centerTitle: true,
             actions: [
-              IconButton(onPressed: () {}, icon: const Icon(Icons.more_horiz, color: Colors.white)),
+              IconButton(
+                onPressed: () {},
+                icon: const Icon(Icons.more_horiz, color: Colors.white),
+              ),
             ],
           ),
         ),
@@ -69,7 +87,10 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                     borderRadius: BorderRadius.circular(20),
                     child: imageUrl != null
                         ? Image.network(imageUrl, fit: BoxFit.cover)
-                        : Container(color: AppColors.surfaceHigh, child: const Icon(Icons.music_note, size: 100)),
+                        : Container(
+                            color: AppColors.surfaceHigh,
+                            child: const Icon(Icons.music_note, size: 100),
+                          ),
                   ),
                 );
               },
@@ -89,7 +110,11 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                         valueListenable: player.currentSongTitle,
                         builder: (context, title, _) => Text(
                           title ?? "Select a Song",
-                          style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -98,7 +123,10 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                         valueListenable: player.currentArtist,
                         builder: (context, artist, _) => Text(
                           artist ?? "",
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 18),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -107,7 +135,8 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                 // REUSABLE LIKE BUTTON LOGIC
                 ValueListenableBuilder<String?>(
                   valueListenable: player.currentSongId,
-                  builder: (context, id, _) => id != null ? LikeButton(songId: id) : const SizedBox(),
+                  builder: (context, id, _) =>
+                      id != null ? LikeButton(songId: id) : const SizedBox(),
                 ),
               ],
             ),
@@ -128,16 +157,23 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                         SliderTheme(
                           data: SliderTheme.of(context).copyWith(
                             trackHeight: 4,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                            thumbShape: const RoundSliderThumbShape(
+                              enabledThumbRadius: 6,
+                            ),
+                            overlayShape: const RoundSliderOverlayShape(
+                              overlayRadius: 14,
+                            ),
                             activeTrackColor: AppColors.primaryGreen,
                             inactiveTrackColor: Colors.white10,
                             thumbColor: Colors.white,
                           ),
                           child: Slider(
                             value: position.inSeconds.toDouble(),
-                            max: duration.inSeconds.toDouble() > 0 ? duration.inSeconds.toDouble() : 1.0,
-                            onChanged: (value) => player.seek(Duration(seconds: value.toInt())),
+                            max: duration.inSeconds.toDouble() > 0
+                                ? duration.inSeconds.toDouble()
+                                : 1.0,
+                            onChanged: (value) =>
+                                player.seek(Duration(seconds: value.toInt())),
                           ),
                         ),
                         Padding(
@@ -145,8 +181,20 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(_formatDuration(position), style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
-                              Text(_formatDuration(duration), style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                              Text(
+                                _formatDuration(position),
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
+                              Text(
+                                _formatDuration(duration),
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -168,7 +216,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                   valueListenable: player.isShuffle,
                   builder: (context, shuffle, _) => IconButton(
                     onPressed: () => player.toggleShuffle(),
-                    icon: Icon(Icons.shuffle, color: shuffle ? AppColors.primaryGreen : AppColors.textMuted, size: 28),
+                    icon: Icon(
+                      Icons.shuffle,
+                      color: shuffle
+                          ? AppColors.primaryGreen
+                          : AppColors.textMuted,
+                      size: 28,
+                    ),
                   ),
                 ),
 
@@ -176,34 +230,61 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                 IconButton(
                   onPressed: () {
                     setState(() => _prevColor = AppColors.primaryGreen);
-                    Future.delayed(const Duration(milliseconds: 200), () => setState(() => _prevColor = Colors.white));
+                    Future.delayed(
+                      const Duration(milliseconds: 200),
+                      () => setState(() => _prevColor = Colors.white),
+                    );
                     player.skipPrevious();
                   },
-                  icon: Icon(Icons.skip_previous_rounded, color: _prevColor, size: 45),
+                  icon: Icon(
+                    Icons.skip_previous_rounded,
+                    color: _prevColor,
+                    size: 45,
+                  ),
                 ),
 
                 // CIRCULAR PLAY/PAUSE (CORE DESIGN)
-                ValueListenableBuilder<bool>(
-                  valueListenable: player.isPlaying,
-                  builder: (context, playing, _) => GestureDetector(
-                    onTap: () => player.togglePlay(),
-                    child: Container(
-                      width: 75,
-                      height: 75,
-                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                      child: Icon(playing ? Icons.pause_rounded : Icons.play_arrow_rounded, color: Colors.black, size: 45),
-                    ),
-                  ),
+                StreamBuilder<PlaybackState>(
+                  stream: player
+                      .playbackStateStream, // Direct link to the audio engine
+                  builder: (context, snapshot) {
+                    final playing = snapshot.data?.playing ?? false;
+                    return GestureDetector(
+                      onTap: () => player.togglePlay(),
+                      child: Container(
+                        width: 75,
+                        height: 75,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          playing
+                              ? Icons.pause_rounded
+                              : Icons.play_arrow_rounded,
+                          color: Colors.black,
+                          size: 45,
+                        ),
+                      ),
+                    );
+                  },
                 ),
 
                 // NEXT BUTTON (Flicker logic)
                 IconButton(
                   onPressed: () {
                     setState(() => _nextColor = AppColors.primaryGreen);
-                    Future.delayed(const Duration(milliseconds: 200), () => setState(() => _nextColor = Colors.white));
+                    Future.delayed(
+                      const Duration(milliseconds: 200),
+                      () => setState(() => _nextColor = Colors.white),
+                    );
                     player.skipNext();
                   },
-                  icon: Icon(Icons.skip_next_rounded, color: _nextColor, size: 45),
+                  icon: Icon(
+                    Icons.skip_next_rounded,
+                    color: _nextColor,
+                    size: 45,
+                  ),
                 ),
 
                 // REPEAT BUTTON
@@ -211,7 +292,13 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                   valueListenable: player.loopMode,
                   builder: (context, mode, _) => IconButton(
                     onPressed: () => player.toggleRepeat(),
-                    icon: Icon(Icons.repeat, color: mode == LoopMode.one ? AppColors.primaryGreen : AppColors.textMuted, size: 28),
+                    icon: Icon(
+                      Icons.repeat,
+                      color: mode == LoopMode.one
+                          ? AppColors.primaryGreen
+                          : AppColors.textMuted,
+                      size: 28,
+                    ),
                   ),
                 ),
               ],
@@ -220,8 +307,20 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
             const Spacer(flex: 2),
 
             // 5. LYRICS BUTTON
-            const Text("LYRICS", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2, fontSize: 12)),
-            const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 30),
+            const Text(
+              "LYRICS",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2,
+                fontSize: 12,
+              ),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_up_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
             const SizedBox(height: 20),
           ],
         ),

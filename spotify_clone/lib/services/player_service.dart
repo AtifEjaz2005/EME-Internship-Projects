@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../widgets/mini_player_color.dart';
 import 'audio_handler.dart';
-import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+import '../models/music_track.dart';
+import 'audius_provider.dart';
 
 class PlayerService {
   static final PlayerService _instance = PlayerService._internal();
@@ -11,7 +12,6 @@ class PlayerService {
   PlayerService._internal();
 
   // State Notifiers
-  ValueNotifier<bool> isPlaying = ValueNotifier(false);
   ValueNotifier<String?> currentSongId = ValueNotifier(null);
   ValueNotifier<String?> currentSongTitle = ValueNotifier(null);
   ValueNotifier<String?> currentArtist = ValueNotifier(null);
@@ -25,6 +25,7 @@ class PlayerService {
 
   Stream<Duration> get positionStream => audioHandler.positionStream;
   Stream<Duration?> get durationStream => audioHandler.durationStream;
+  Stream<PlaybackState> get playbackStateStream => audioHandler.playbackState.stream;
 
   Future<void> playSong(
     String id,
@@ -51,19 +52,18 @@ class PlayerService {
       );
       // Wait for state update
       await Future.delayed(const Duration(milliseconds: 200));
-      isPlaying.value = audioHandler.playbackState.value.playing;
+      audioHandler.play();
     } catch (e) {
       debugPrint("Error playing song: $e");
     }
   }
 
-  void togglePlay() async {
+  void togglePlay() {
     if (audioHandler.playbackState.value.playing) {
-      await audioHandler.pause();
+      audioHandler.pause();
     } else {
-      await audioHandler.play();
+      audioHandler.play();
     }
-    isPlaying.value = audioHandler.playbackState.value.playing;
   }
 
   void seek(Duration position) {
@@ -90,59 +90,30 @@ class PlayerService {
     audioHandler.stop();
   }
 
-  Future<void> playYoutubeSong(
-    String videoId,
-    String title,
-    String artist,
-    String image,
-  ) async {
-    final yt = YoutubeExplode();
+  Future<void> playTrack(MusicTrack track) async {
+    // 1. Update UI Metadata immediately
+    currentSongId.value = track.id;
+    currentSongTitle.value = track.title;
+    currentArtist.value = track.artist;
+    currentImageUrl.value = track.artworkUrl; // FIX: Ensure this is updated for the MiniPlayer
+    miniPlayerBgColor.value = MiniPlayerColor.getNewColor();
 
     try {
-      currentSongTitle.value = title;
-      currentArtist.value = artist;
-      currentImageUrl.value = image;
-      miniPlayerBgColor.value = MiniPlayerColor.getNewColor();
-
-      debugPrint('Getting YouTube manifest for: $videoId');
-
-      var manifest = await yt.videos.streamsClient.getManifest(
-        videoId,
-        ytClients: [YoutubeApiClient.mweb],
-      );
-
-      if (manifest.audioOnly.isEmpty) {
-        throw Exception('No audio streams available');
+      String? streamUrl = await AudiusProvider().resolvePlayback(track);
+      if (streamUrl != null) {
+        await audioHandler.playMediaItem(
+          MediaItem(
+            id: streamUrl,
+            album: "Audius",
+            title: track.title,
+            artist: track.artist,
+            artUri: Uri.parse(track.artworkUrl),
+          ),
+        );
+        // The audioHandler automatically updates its playbackState to 'playing'
       }
-
-      final audioStream = manifest.audioOnly.withHighestBitrate();
-
-      final audioUrl = audioStream.url.toString();
-
-      debugPrint('========== YOUTUBE AUDIO ==========');
-      debugPrint('Video ID: $videoId');
-      debugPrint('Container: ${audioStream.container}');
-      debugPrint('Codec: ${audioStream.audioCodec}');
-      debugPrint('Bitrate: ${audioStream.bitrate}');
-      debugPrint('URL: ${audioStream.url}');
-      debugPrint('===================================');
-
-      await audioHandler.playMediaItem(
-        MediaItem(
-          id: audioUrl,
-          album: 'YouTube Music',
-          title: title,
-          artist: artist,
-          artUri: Uri.parse(image),
-        ),
-      );
-
-      isPlaying.value = true;
-    } catch (e, stackTrace) {
-      debugPrint('YouTube playback failed: $e');
-      debugPrintStack(stackTrace: stackTrace);
-    } finally {
-      yt.close();
+    } catch (e) {
+      debugPrint("Playback Error: $e");
     }
   }
 }
