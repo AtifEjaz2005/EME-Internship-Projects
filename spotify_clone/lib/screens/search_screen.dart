@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../themes/app_colors.dart';
 import '../widgets/category_card.dart';
 import '../services/player_service.dart';
@@ -15,6 +16,28 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    // If the user is still typing, cancel the previous timer
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+
+    // Wait 400ms after the user stops typing before searching
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      if (mounted) {
+        setState(() {
+          _searchQuery = query;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +57,7 @@ class _SearchScreenState extends State<SearchScreen> {
               // 1. PILL SEARCH BAR (Design Spec #13)
               TextField(
                 controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val),
+                onChanged: _onSearchChanged,
                 style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   hintText: "What do you want to listen to?",
