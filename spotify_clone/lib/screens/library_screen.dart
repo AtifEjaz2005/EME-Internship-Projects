@@ -6,7 +6,6 @@ import 'playlist_detail_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-
 class LibraryScreen extends StatelessWidget {
   const LibraryScreen({super.key});
 
@@ -17,11 +16,23 @@ class LibraryScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text("Your Library",
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+        title: const Text(
+          "Your Library",
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.search, color: Colors.white)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.add, color: Colors.white)),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.search, color: Colors.white),
+          ),
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.add, color: Colors.white),
+          ),
         ],
       ),
       body: Column(
@@ -47,7 +58,8 @@ class LibraryScreen extends StatelessWidget {
 
           // 2. LIBRARY LIST
           Expanded(
-            child: StreamBuilder<QuerySnapshot>( // Changed to QuerySnapshot to get IDs
+            child: StreamBuilder<QuerySnapshot>(
+              // Changed to QuerySnapshot to get IDs
               stream: FirebaseFirestore.instance
                   .collection('users')
                   .doc(FirebaseAuth.instance.currentUser!.uid)
@@ -55,7 +67,8 @@ class LibraryScreen extends StatelessWidget {
                   .orderBy('createdAt', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+                if (!snapshot.hasData)
+                  return const Center(child: CircularProgressIndicator());
 
                 final docs = snapshot.data!.docs;
 
@@ -68,24 +81,41 @@ class LibraryScreen extends StatelessWidget {
                       title: "Liked Songs",
                       subtitle: "Playlist",
                       isLiked: true,
-                      onTap: () => Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => const PlaylistDetailScreen(playlistName: "Liked Songs", isLikedSongs: true)
-                      )),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const PlaylistDetailScreen(
+                            playlistName: "Liked Songs",
+                            isLikedSongs: true,
+                          ),
+                        ),
+                      ),
                     ),
 
                     // B. DYNAMIC PLAYLISTS WITH DELETE OPTION
                     ...docs.map((doc) {
                       String name = doc['name'];
-                      String id = doc.id; // We need this ID to delete it
+                      String id = doc.id; // Get the Firestore doc ID
 
                       return _buildLibraryItem(
                         context,
                         title: name,
-                        subtitle: "Playlist • MUSIKI User",
-                        playlistId: id, // Pass ID for the delete menu
-                        onTap: () => Navigator.push(context, MaterialPageRoute(
-                          builder: (context) => PlaylistDetailScreen(playlistName: name)
-                        )),
+                        subtitle: "Playlist • MUSIKI",
+                        playlistId: id,
+                        onTap: () {
+                          // PASS BOTH playlistName AND playlistId:
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PlaylistDetailScreen(
+                                playlistName: name,
+                                playlistId:
+                                    id, // <--- Passes ID so it loads real songs!
+                                isLikedSongs: false,
+                              ),
+                            ),
+                          );
+                        },
                       );
                     }),
 
@@ -100,54 +130,85 @@ class LibraryScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLibraryItem(BuildContext context, {
+  Widget _buildLibraryItem(
+    BuildContext context, {
     required String title,
     required String subtitle,
     bool isLiked = false,
     String? playlistId, // Optional ID
-    required VoidCallback onTap
+    required VoidCallback onTap,
   }) {
     return ListTile(
       onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(vertical: 4),
       leading: Container(
-        width: 56, height: 56,
+        width: 56,
+        height: 56,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
           color: AppColors.surfaceDefault,
-          gradient: isLiked ? const LinearGradient(colors: [Color(0xFF450AF5), Color(0xFFC4EFD9)]) : null,
+          gradient: isLiked
+              ? const LinearGradient(
+                  colors: [Color(0xFF450AF5), Color(0xFFC4EFD9)],
+                )
+              : null,
         ),
         child: Center(
           child: isLiked
-            ? const Icon(Icons.favorite, color: Colors.white)
-            : SvgPicture.asset('lib/assets/library.svg', width: 24, colorFilter: const ColorFilter.mode(Colors.white54, BlendMode.srcIn)),
+              ? const Icon(Icons.favorite, color: Colors.white)
+              : SvgPicture.asset(
+                  'lib/assets/library.svg',
+                  width: 24,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white54,
+                    BlendMode.srcIn,
+                  ),
+                ),
         ),
       ),
-      title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-      subtitle: Text(subtitle, style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+      ),
 
       // THREE DOTS DROPDOWN MENU
-      trailing: isLiked ? null : PopupMenuButton<String>(
-        icon: const Icon(Icons.more_vert, color: Colors.white70),
-        color: AppColors.surfaceHigh,
-        onSelected: (value) {
-          if (value == 'delete') {
-            _showDeleteConfirmation(context, playlistId!, title);
-          }
-        },
-        itemBuilder: (BuildContext context) => [
-          const PopupMenuItem(
-            value: 'delete',
-            child: Row(
-              children: [
-                Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                SizedBox(width: 10),
-                Text("Delete Playlist", style: TextStyle(color: Colors.white)),
+      trailing: isLiked
+          ? null
+          : PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white70),
+              color: AppColors.surfaceHigh,
+              onSelected: (value) {
+                if (value == 'delete') {
+                  _showDeleteConfirmation(context, playlistId!, title);
+                }
+              },
+              itemBuilder: (BuildContext context) => [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                        size: 20,
+                      ),
+                      SizedBox(width: 10),
+                      Text(
+                        "Delete Playlist",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -163,12 +224,26 @@ class LibraryScreen extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 60),
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.redAccent,
+                size: 60,
+              ),
               const SizedBox(height: 16),
-              Text("Delete '$name'?", style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text(
+                "Delete '$name'?",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               const SizedBox(height: 12),
-              const Text("This will permanently remove the playlist and all songs inside it.",
-                textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+              const Text(
+                "This will permanently remove the playlist and all songs inside it.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              ),
               const SizedBox(height: 32),
               SizedBox(
                 width: double.infinity,
@@ -179,13 +254,30 @@ class LibraryScreen extends StatelessWidget {
                     if (!context.mounted) return;
                     Navigator.pop(context);
                   },
-                  style: TextButton.styleFrom(backgroundColor: Colors.redAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
-                  child: const Text("DELETE", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text(
+                    "DELETE",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text("CANCEL", style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.bold)),
+                child: const Text(
+                  "CANCEL",
+                  style: TextStyle(
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -207,7 +299,10 @@ class _FilterChip extends StatelessWidget {
         border: Border.all(color: Colors.white24),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.white, fontSize: 12),
+      ),
     );
   }
 }

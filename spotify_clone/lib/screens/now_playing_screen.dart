@@ -4,6 +4,7 @@ import 'package:just_audio/just_audio.dart'; // Add this import
 import '../themes/app_colors.dart';
 import '../services/player_service.dart';
 import '../widgets/like_button.dart';
+import '../models/music_track.dart';
 
 class NowPlayingScreen extends StatefulWidget {
   // Changed to StatefulWidget for flicker logic
@@ -51,12 +52,6 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
               ),
             ),
             centerTitle: true,
-            actions: [
-              IconButton(
-                onPressed: () {},
-                icon: const Icon(Icons.more_horiz, color: Colors.white),
-              ),
-            ],
           ),
         ),
       ),
@@ -133,10 +128,11 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                   ),
                 ),
                 // REUSABLE LIKE BUTTON LOGIC
-                ValueListenableBuilder<String?>(
-                  valueListenable: player.currentSongId,
-                  builder: (context, id, _) =>
-                      id != null ? LikeButton(songId: id) : const SizedBox(),
+                ValueListenableBuilder<MusicTrack?>(
+                  valueListenable:
+                      player.currentTrack, // Listen to the MusicTrack object
+                  builder: (context, track, _) =>
+                      LikeButton(track: track, size: 30),
                 ),
               ],
             ),

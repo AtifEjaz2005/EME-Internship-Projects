@@ -3,6 +3,9 @@ import 'package:audio_service/audio_service.dart';
 import '../services/player_service.dart';
 import '../screens/now_playing_screen.dart';
 import '../services/audio_handler.dart';
+import '../models/music_track.dart';
+import '../services/playlist_service.dart';
+import '../themes/app_colors.dart';
 
 class MiniPlayer extends StatelessWidget {
   const MiniPlayer({super.key});
@@ -37,7 +40,7 @@ class MiniPlayer extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 600),
-                height: 72, // Standard height for MUSIKI
+                height: 65, // Standard height for MUSIKI
                 margin: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   color: bgColor.withValues(alpha: 0.95),
@@ -61,7 +64,8 @@ class MiniPlayer extends StatelessWidget {
                                         width: 48,
                                         height: 48,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (c, e, s) => _placeholderArt(),
+                                        errorBuilder: (c, e, s) =>
+                                            _placeholderArt(),
                                       )
                                     : _placeholderArt(),
                               );
@@ -78,9 +82,10 @@ class MiniPlayer extends StatelessWidget {
                                 Text(
                                   title,
                                   style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15),
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -89,7 +94,9 @@ class MiniPlayer extends StatelessWidget {
                                   builder: (context, artist, _) => Text(
                                     artist ?? "Unknown Artist",
                                     style: const TextStyle(
-                                        color: Colors.white70, fontSize: 13),
+                                      color: Colors.white70,
+                                      fontSize: 13,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
@@ -98,10 +105,44 @@ class MiniPlayer extends StatelessWidget {
                             ),
                           ),
 
-                          const Icon(Icons.devices_outlined, color: Colors.white, size: 24),
-                          const SizedBox(width: 16),
-                          const Icon(Icons.add_circle_outline, color: Colors.white, size: 26),
-                          const SizedBox(width: 8),
+                          ValueListenableBuilder<MusicTrack?>(
+                            valueListenable: player.currentTrack,
+                            builder: (context, track, _) {
+                              return IconButton(
+                                icon: const Icon(
+                                  Icons.add_circle_outline,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
+                                onPressed: track == null
+                                    ? null
+                                    : () async {
+                                        await PlaylistService().addSongToLiked(
+                                          track,
+                                        );
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              backgroundColor:
+                                                  AppColors.surfaceHigh,
+                                              content: Text(
+                                                "Added \"${track.title}\" to Liked Songs",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
+                                            ),
+                                          );
+                                        }
+                                      },
+                              );
+                            },
+                          ),
 
                           // 3. INSTANT PLAY/PAUSE SYNC (Fixes lag and completion issue)
                           StreamBuilder<PlaybackState>(
@@ -111,7 +152,9 @@ class MiniPlayer extends StatelessWidget {
                               return IconButton(
                                 onPressed: () => player.togglePlay(),
                                 icon: Icon(
-                                  playing ? Icons.pause : Icons.play_arrow_rounded,
+                                  playing
+                                      ? Icons.pause
+                                      : Icons.play_arrow_rounded,
                                   color: Colors.white,
                                   size: 34,
                                 ),
@@ -137,7 +180,9 @@ class MiniPlayer extends StatelessWidget {
                               final duration = snapshot.data ?? Duration.zero;
                               double progress = 0.0;
                               if (duration.inMilliseconds > 0) {
-                                progress = position.inMilliseconds / duration.inMilliseconds;
+                                progress =
+                                    position.inMilliseconds /
+                                    duration.inMilliseconds;
                               }
                               return Container(
                                 height: 2,

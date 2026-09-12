@@ -99,7 +99,7 @@ class _MainWrapperState extends State<MainWrapper> {
           // 4. THE MINI PLAYER (Hidden when Create is Open)
           if (!_isCreateOpen)
             const Positioned(
-              bottom: 85, // Pushed up slightly to stay above the Nav Bar
+              bottom: 80, // Pushed up slightly to stay above the Nav Bar
               left: 0,
               right: 0,
               child: MiniPlayer(),

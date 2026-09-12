@@ -1,12 +1,12 @@
 class MusicTrack {
-  final String id;              // Unique ID for Musiki (e.g., Firestore ID or Audius ID)
+  final String id;
   final String title;
   final String artist;
   final String artworkUrl;
-  final String provider;        // 'audius' or 'firebase'
-  final String providerTrackId; // The ID inside the Audius system
+  final String provider;
+  final String providerTrackId;
   final Duration? duration;
-  final String? audioUrl;       // Can be null until resolved
+  final String? audioUrl;
 
   MusicTrack({
     required this.id,
@@ -18,4 +18,30 @@ class MusicTrack {
     this.duration,
     this.audioUrl,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'artist': artist,
+      'artworkUrl': artworkUrl,
+      'provider': provider,
+      'providerTrackId': providerTrackId,
+      'duration': duration?.inSeconds ?? 0,
+      'audioUrl': audioUrl,
+    };
+  }
+
+  factory MusicTrack.fromMap(Map<String, dynamic> map) {
+    return MusicTrack(
+      id: map['id']?.toString() ?? '',
+      title: map['title'] ?? 'Unknown Track',
+      artist: map['artist'] ?? 'Unknown Artist',
+      artworkUrl: map['artworkUrl'] ?? '',
+      provider: map['provider'] ?? 'audius',
+      providerTrackId: map['providerTrackId']?.toString() ?? '',
+      duration: Duration(seconds: map['duration'] ?? 0),
+      audioUrl: map['audioUrl'],
+    );
+  }
 }

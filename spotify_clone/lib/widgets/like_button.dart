@@ -2,39 +2,47 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../themes/app_colors.dart';
+import '../models/music_track.dart';
+import '../services/playlist_service.dart';
 
 class LikeButton extends StatelessWidget {
-  final String songId;
+  final MusicTrack? track;
   final double size;
 
-  const LikeButton({super.key, required this.songId, this.size = 30});
+  const LikeButton({super.key, required this.track, this.size = 30});
 
   @override
   Widget build(BuildContext context) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return Icon(Icons.favorite_border, size: size);
+    if (uid == null || track == null) {
+      return Icon(Icons.favorite_border, color: Colors.white, size: size);
+    }
 
     final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
 
     return StreamBuilder<DocumentSnapshot>(
       stream: userDoc.snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data?.data() == null) {
-          return Icon(Icons.favorite_border, color: Colors.white, size: size);
+        List likedSongs = [];
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+          likedSongs = data?['likedSongs'] ?? [];
         }
 
-        List likedSongs = (snapshot.data!.data() as Map<String, dynamic>)['likedSongs'] ?? [];
-        bool isLiked = likedSongs.contains(songId);
+        final trackId = track!.providerTrackId;
+        final bool isLiked = likedSongs.contains(trackId);
 
-        return GestureDetector(
-          onTap: () {
+        return IconButton(
+          onPressed: () async {
             if (isLiked) {
-              userDoc.update({'likedSongs': FieldValue.arrayRemove([songId])});
+              // REMOVE FROM LIKED
+              await PlaylistService().removeSongFromLiked(trackId);
             } else {
-              userDoc.update({'likedSongs': FieldValue.arrayUnion([songId])});
+              // ADD FULL TRACK METADATA TO LIKED
+              await PlaylistService().addSongToLiked(track!);
             }
           },
-          child: Icon(
+          icon: Icon(
             isLiked ? Icons.favorite : Icons.favorite_border,
             color: isLiked ? AppColors.primaryGreen : Colors.white,
             size: size,

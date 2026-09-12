@@ -105,31 +105,42 @@ class HomeScreen extends StatelessWidget {
 
               const SizedBox(height: 24),
 
-              StreamBuilder<List<String>>(
-                stream: PlaylistService().getPlaylists(),
+              StreamBuilder<List<PlaylistModel>>(
+                stream: PlaylistService().getUserPlaylists(),
                 builder: (context, snapshot) {
-                  // 1. Get user playlists or empty list
-                  List<String> userPlaylists = snapshot.data ?? [];
+                  List<PlaylistModel> userPlaylists = snapshot.data ?? [];
+                  List<PlaylistModel> displayPlaylists = userPlaylists
+                      .take(4)
+                      .toList();
 
-                  // 2. Limit to top 4 and add the 2 "Must" tiles
-                  List<String> displayList = userPlaylists.take(4).toList();
-                  displayList.add("Other Playlists");
-                  displayList.add("Liked Songs");
+                  // Total tiles: up to 4 custom + 2 mandatory ("Other Playlists" and "Liked Songs")
+                  int totalCount = displayPlaylists.length + 2;
 
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    itemCount: displayList.length,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 2.8,
-                    ),
+                    itemCount: totalCount,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 2.8,
+                        ),
                     itemBuilder: (context, index) {
-                      String name = displayList[index];
-                      bool isUserPlaylist = index < (displayList.length - 2);
-                      bool isLiked = name == "Liked Songs";
+                      bool isLiked = index == totalCount - 1;
+                      bool isOther = index == totalCount - 2;
+                      bool isUserPlaylist = !isLiked && !isOther;
+
+                      String name = isLiked
+                          ? "Liked Songs"
+                          : (isOther
+                                ? "Other Playlists"
+                                : displayPlaylists[index].name);
+
+                      String? playlistId = isUserPlaylist
+                          ? displayPlaylists[index].id
+                          : null;
 
                       return GestureDetector(
                         onTap: () {
@@ -138,6 +149,7 @@ class HomeScreen extends StatelessWidget {
                             MaterialPageRoute(
                               builder: (context) => PlaylistDetailScreen(
                                 playlistName: name,
+                                playlistId: playlistId,
                                 isLikedSongs: isLiked,
                               ),
                             ),
@@ -145,8 +157,11 @@ class HomeScreen extends StatelessWidget {
                         },
                         child: _buildQuickAccessTile(
                           name,
-                          isUserPlaylist ? 'lib/assets/library.svg' :
-                          (isLiked ? Icons.favorite : Icons.playlist_play),
+                          isUserPlaylist
+                              ? 'lib/assets/library.svg'
+                              : (isLiked
+                                    ? Icons.favorite
+                                    : Icons.playlist_play),
                           isSvg: isUserPlaylist,
                           isGreen: isLiked,
                         ),

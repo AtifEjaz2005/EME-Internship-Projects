@@ -19,6 +19,7 @@ class PlayerService {
   ValueNotifier<Color> miniPlayerBgColor = ValueNotifier(
     const Color(0xFF222326),
   );
+  ValueNotifier<MusicTrack?> currentTrack = ValueNotifier(null);
 
   ValueNotifier<bool> isShuffle = ValueNotifier(false);
   ValueNotifier<LoopMode> loopMode = ValueNotifier(LoopMode.off);
@@ -92,6 +93,7 @@ class PlayerService {
 
   Future<void> playTrack(MusicTrack track) async {
     // 1. Update UI Metadata immediately
+    currentTrack.value = track;
     currentSongId.value = track.id;
     currentSongTitle.value = track.title;
     currentArtist.value = track.artist;
