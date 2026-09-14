@@ -32,7 +32,7 @@ void showSongOptionsSheet({
                       borderRadius: BorderRadius.circular(6),
                       child: track.artworkUrl.isNotEmpty
                           ? Image.network(track.artworkUrl, width: 44, height: 44, fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(width: 44, height: 44, color: Colors.white10))
+                              errorBuilder: (_, _, _) => Container(width: 44, height: 44, color: Colors.white10))
                           : Container(width: 44, height: 44, color: Colors.white10),
                     ),
                     const SizedBox(width: 12),

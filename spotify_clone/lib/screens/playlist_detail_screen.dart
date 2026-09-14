@@ -24,8 +24,8 @@ class PlaylistDetailScreen extends StatelessWidget {
     final Stream<List<MusicTrack>> songsStream = isLikedSongs
         ? playlistService.getLikedSongs()
         : (playlistId != null
-            ? playlistService.getPlaylistSongs(playlistId!)
-            : const Stream.empty());
+              ? playlistService.getPlaylistSongs(playlistId!)
+              : const Stream.empty());
 
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
@@ -48,7 +48,9 @@ class PlaylistDetailScreen extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          isLikedSongs ? const Color(0xFF2E4E3B) : const Color(0xFF222326),
+                          isLikedSongs
+                              ? const Color(0xFF2E4E3B)
+                              : const Color(0xFF222326),
                           AppColors.primaryBackground,
                         ],
                       ),
@@ -63,19 +65,27 @@ class PlaylistDetailScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: Colors.white10,
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: const [BoxShadow(color: Colors.black45, blurRadius: 20)],
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black45, blurRadius: 20),
+                            ],
                           ),
                           child: Icon(
                             isLikedSongs ? Icons.favorite : Icons.music_note,
                             size: 70,
-                            color: isLikedSongs ? AppColors.primaryGreen : Colors.white,
+                            color: isLikedSongs
+                                ? AppColors.primaryGreen
+                                : Colors.white,
                           ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           playlistName,
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ],
                     ),
@@ -86,27 +96,43 @@ class PlaylistDetailScreen extends StatelessWidget {
               // 2. ACTION ROW (WITH FUNCTIONAL GREEN PLAY BUTTON)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
-                      Text(isLikedSongs ? "Favorite Tracks • MUSIKI" : "Playlist • MUSIKI",
-                          style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                      Text(
+                        isLikedSongs
+                            ? "Favorite Tracks • MUSIKI"
+                            : "Playlist • MUSIKI",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 13,
+                        ),
+                      ),
                       const Spacer(),
                       // GREEN PLAY BUTTON: Plays the first song in playlist
                       GestureDetector(
                         onTap: () {
                           if (songs.isNotEmpty) {
-                            PlayerService().playTrack(songs.first);
+                            PlayerService().playTrackFromQueue(songs, 0);
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("No songs to play!")),
+                              const SnackBar(
+                                content: Text("No songs to play!"),
+                              ),
                             );
                           }
                         },
                         child: CircleAvatar(
                           radius: 26,
                           backgroundColor: AppColors.primaryGreen,
-                          child: const Icon(Icons.play_arrow_rounded, color: Colors.black, size: 34),
+                          child: const Icon(
+                            Icons.play_arrow_rounded,
+                            color: Colors.black,
+                            size: 34,
+                          ),
                         ),
                       ),
                     ],
@@ -120,7 +146,9 @@ class PlaylistDetailScreen extends StatelessWidget {
                   child: Center(
                     child: Padding(
                       padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(color: AppColors.primaryGreen),
+                      child: CircularProgressIndicator(
+                        color: AppColors.primaryGreen,
+                      ),
                     ),
                   ),
                 )
@@ -132,66 +160,90 @@ class PlaylistDetailScreen extends StatelessWidget {
                       child: Text(
                         "No songs in this playlist yet.\nSearch and add songs using the (⋮) menu!",
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: AppColors.textMuted, fontSize: 14),
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
                 )
               else
                 SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final track = songs[index];
-                      return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(6),
-                          child: track.artworkUrl.isNotEmpty
-                              ? Image.network(
-                                  track.artworkUrl,
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final track = songs[index];
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(6),
+                        child: track.artworkUrl.isNotEmpty
+                            ? Image.network(
+                                track.artworkUrl,
+                                width: 48,
+                                height: 48,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => Container(
                                   width: 48,
                                   height: 48,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (_, __, ___) => Container(
-                                    width: 48, height: 48, color: Colors.white10,
-                                    child: const Icon(Icons.music_note, color: Colors.white54),
+                                  color: Colors.white10,
+                                  child: const Icon(
+                                    Icons.music_note,
+                                    color: Colors.white54,
                                   ),
-                                )
-                              : Container(
-                                  width: 48, height: 48, color: Colors.white10,
-                                  child: const Icon(Icons.music_note, color: Colors.white54),
                                 ),
+                              )
+                            : Container(
+                                width: 48,
+                                height: 48,
+                                color: Colors.white10,
+                                child: const Icon(
+                                  Icons.music_note,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                      ),
+                      title: Text(
+                        track.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
                         ),
-                        title: Text(
-                          track.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                      subtitle: Text(
+                        track.artist,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
                         ),
-                        subtitle: Text(
-                          track.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      ),
+                      // 3 VERTICAL DOTS: Opens remove/add options
+                      trailing: IconButton(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          color: Colors.white70,
                         ),
-                        // 3 VERTICAL DOTS: Opens remove/add options
-                        trailing: IconButton(
-                          icon: const Icon(Icons.more_vert, color: Colors.white70),
-                          onPressed: () {
-                            showSongOptionsSheet(
-                              context: context,
-                              track: track,
-                              currentPlaylistId: playlistId,
-                              currentPlaylistName: playlistName,
-                              isLikedSongs: isLikedSongs,
-                            );
-                          },
-                        ),
-                        onTap: () => PlayerService().playTrack(track),
-                      );
-                    },
-                    childCount: songs.length,
-                  ),
+                        onPressed: () {
+                          showSongOptionsSheet(
+                            context: context,
+                            track: track,
+                            currentPlaylistId: playlistId,
+                            currentPlaylistName: playlistName,
+                            isLikedSongs: isLikedSongs,
+                          );
+                        },
+                      ),
+                      onTap: () =>
+                          PlayerService().playTrackFromQueue(songs, index),
+                    );
+                  }, childCount: songs.length),
                 ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 120)),

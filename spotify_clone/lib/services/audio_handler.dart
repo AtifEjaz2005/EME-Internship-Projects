@@ -1,8 +1,7 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:flutter/material.dart';
+import 'player_service.dart';
 
-// The global instance must be of type MusikiAudioHandler to see custom getters
 late MusikiAudioHandler audioHandler;
 
 class MusikiAudioHandler extends BaseAudioHandler with SeekHandler {
@@ -10,33 +9,42 @@ class MusikiAudioHandler extends BaseAudioHandler with SeekHandler {
 
   MusikiAudioHandler() {
     _player.playbackEventStream.map(_transformEvent).pipe(playbackState);
+
+    // AUTO-PLAY NEXT: Listen for song completion
+    _player.playerStateStream.listen((state) {
+      if (state.processingState == ProcessingState.completed) {
+        // Only skip to next if not repeating the same song
+        if (_player.loopMode != LoopMode.one) {
+          PlayerService().skipNext();
+        }
+      }
+    });
   }
 
-  // EXPOSE THE STREAMS
   Stream<Duration> get positionStream => _player.positionStream;
   Stream<Duration?> get durationStream => _player.durationStream;
 
-  // EXPOSE PLAYBACK CONTROLS
   void setLoopMode(LoopMode mode) => _player.setLoopMode(mode);
-
-  // Renamed to avoid conflict with AudioService's built-in setShuffleMode
-  void setShuffleModeEnabled(bool enabled) =>
-      _player.setShuffleModeEnabled(enabled);
+  void setShuffleModeEnabled(bool enabled) => _player.setShuffleModeEnabled(enabled);
 
   @override
   Future<void> playMediaItem(MediaItem mediaItem) async {
     this.mediaItem.add(mediaItem);
-
     try {
-      final audioSource = AudioSource.uri(Uri.parse(mediaItem.id));
-
+      final audioSource = AudioSource.uri(
+        Uri.parse(mediaItem.id),
+        headers: {
+          'User-Agent':
+              'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
+          'Accept': '*/*',
+          'Connection': 'keep-alive',
+          'Icy-MetaData': '1',
+        },
+      );
       await _player.setAudioSource(audioSource);
-      await _player.play();
-    } catch (e, stackTrace) {
-      debugPrint('Final playback error: $e');
-      debugPrintStack(stackTrace: stackTrace);
-
-      rethrow;
+      _player.play();
+    } catch (e) {
+      print("Audio Stream Error: $e");
     }
   }
 
@@ -48,6 +56,12 @@ class MusikiAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> seek(Duration position) => _player.seek(position);
   @override
   Future<void> stop() => _player.stop();
+
+  // CONNECT LOCK-SCREEN / HEADPHONE BUTTONS TO QUEUE
+  @override
+  Future<void> skipToNext() => PlayerService().skipNext();
+  @override
+  Future<void> skipToPrevious() => PlayerService().skipPrevious();
 
   PlaybackState _transformEvent(PlaybackEvent event) {
     return PlaybackState(

@@ -166,9 +166,9 @@ class _SearchScreenState extends State<SearchScreen> {
             final track = results[index];
             return ListTile(
               onTap: () {
-                // Calls the updated playTrack method in PlayerService
-                PlayerService().playTrack(track);
-                FocusScope.of(context).unfocus(); // Close keyboard
+                // Pass the entire search results list and the tapped index as queue
+                PlayerService().playTrackFromQueue(results, index);
+                FocusScope.of(context).unfocus();
               },
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
               leading: ClipRRect(
@@ -238,7 +238,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 width: 44,
                                 height: 44,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorBuilder: (_, _, _) => Container(
                                   width: 44,
                                   height: 44,
                                   color: Colors.white10,
