@@ -93,7 +93,7 @@ class PlaylistDetailScreen extends StatelessWidget {
                                 ? Image.network(
                                     firstSongCover,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) =>
+                                    errorBuilder: (_, _, _) =>
                                         _buildPlaceholderIcon(),
                                   )
                                 : _buildPlaceholderIcon(),
@@ -243,7 +243,7 @@ class PlaylistDetailScreen extends StatelessWidget {
                                 width: 48,
                                 height: 48,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
+                                errorBuilder: (_, _, _) => Container(
                                   width: 48,
                                   height: 48,
                                   color: Colors.white10,

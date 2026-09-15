@@ -108,4 +108,26 @@ class MusikiAudioHandler extends BaseAudioHandler with SeekHandler {
       ),
     );
   }
+
+  // Cues a restored song at the saved timestamp without auto-playing
+  Future<void> prepareMediaItem(MediaItem item, Duration initialPosition) async {
+    mediaItem.add(item);
+    try {
+      final audioSource = AudioSource.uri(
+        Uri.parse(item.id),
+        headers: {
+          'User-Agent':
+              'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
+          'Accept': '*/*',
+          'Connection': 'keep-alive',
+          'Icy-MetaData': '1',
+        },
+      );
+      // Prepares the stream at the saved timestamp while keeping playback paused
+      await _player.setAudioSource(audioSource, initialPosition: initialPosition);
+      _broadcastState();
+    } catch (e) {
+      print("Prepare Media Item Error: $e");
+    }
+  }
 }

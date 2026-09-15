@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   SizedBox(
                     height: 48,
                     child: Image.asset('lib/assets/wordmark.png', fit: BoxFit.contain,
-                      errorBuilder: (_, __, ___) => const Text(
+                      errorBuilder: (_, _, _) => const Text(
                         "MUSIKI",
                         style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold, fontSize: 28, letterSpacing: 1.5),
                       ),
