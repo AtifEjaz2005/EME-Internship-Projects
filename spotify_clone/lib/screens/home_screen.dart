@@ -2,19 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../themes/app_colors.dart';
 import '../widgets/album_card.dart';
-import '../screens/notification_screen.dart';
-import '../screens/profile_screen.dart';
 import '../services/playlist_service.dart';
-import '../screens/playlist_detail_screen.dart';
+import '../services/player_service.dart';
+import '../services/audius_provider.dart';
+import '../models/music_track.dart';
+import 'playlist_detail_screen.dart';
+import 'notification_screen.dart';
+import 'profile_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  late Future<List<MusicTrack>> _trendingTracksFuture;
+  late Future<List<MusicTrack>> _electronicTracksFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Cache the futures so they don't reload on every widget rebuild
+    _trendingTracksFuture = AudiusProvider().getTrendingTracks(limit: 10);
+    _electronicTracksFuture = AudiusProvider().getTrendingTracks(genre: "Electronic", limit: 10);
+  }
+
   String _getGreeting() {
-    var hour = DateTime.now().hour;
+    final hour = DateTime.now().hour;
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
+  }
+
+  void _openFullPlaylist(String title, Future<List<MusicTrack>> future) async {
+    final tracks = await future;
+    if (mounted && tracks.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PlaylistDetailScreen(
+            playlistName: title,
+            preloadedTracks: tracks,
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -23,39 +57,36 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: AppColors.primaryBackground,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Header: Logo, Greeting, Icons
+              const SizedBox(height: 10),
+
+              // 1. HEADER (Logo + Notification with Badge + Profile)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   SizedBox(
-                    height: 55,
-                    child: Image.asset(
-                      'lib/assets/wordmark.png',
-                      fit: BoxFit.contain,
+                    height: 48,
+                    child: Image.asset('lib/assets/wordmark.png', fit: BoxFit.contain,
+                      errorBuilder: (_, __, ___) => const Text(
+                        "MUSIKI",
+                        style: TextStyle(color: AppColors.primaryGreen, fontWeight: FontWeight.bold, fontSize: 28, letterSpacing: 1.5),
+                      ),
                     ),
                   ),
                   Row(
                     children: [
-                      // Notification Icon with Green Dot
                       GestureDetector(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const NotificationScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const NotificationScreen()),
                         ),
                         child: Stack(
                           clipBehavior: Clip.none,
                           children: [
-                            const Icon(
-                              Icons.notifications_none,
-                              color: AppColors.textPrimary,
-                              size: 30,
-                            ),
+                            const Icon(Icons.notifications_none, color: AppColors.textPrimary, size: 30),
                             Positioned(
                               right: 0,
                               top: 0,
@@ -65,10 +96,7 @@ class HomeScreen extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   color: AppColors.primaryGreen,
                                   shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: AppColors.primaryBackground,
-                                    width: 2,
-                                  ),
+                                  border: Border.all(color: AppColors.primaryBackground, width: 2),
                                 ),
                               ),
                             ),
@@ -79,68 +107,52 @@ class HomeScreen extends StatelessWidget {
                       IconButton(
                         onPressed: () => Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) => const ProfileScreen(),
-                          ),
+                          MaterialPageRoute(builder: (context) => const ProfileScreen()),
                         ),
-                        icon: const Icon(
-                          Icons.account_circle_rounded,
-                          color: AppColors.textPrimary,
-                          size: 30,
-                        ),
+                        icon: const Icon(Icons.account_circle_outlined, color: AppColors.textPrimary, size: 30),
                       ),
                     ],
-                  ),
+                  )
                 ],
               ),
-              const SizedBox(height: 15),
-              Text(
-                _getGreeting(),
-                style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-
               const SizedBox(height: 24),
 
+              Text(
+                _getGreeting(),
+                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 24),
+
+              // 2. DYNAMIC FIREBASE QUICK ACCESS GRID
               StreamBuilder<List<PlaylistModel>>(
                 stream: PlaylistService().getUserPlaylists(),
                 builder: (context, snapshot) {
-                  List<PlaylistModel> userPlaylists = snapshot.data ?? [];
-                  List<PlaylistModel> displayPlaylists = userPlaylists
-                      .take(4)
-                      .toList();
-
-                  // Total tiles: up to 4 custom + 2 mandatory ("Other Playlists" and "Liked Songs")
-                  int totalCount = displayPlaylists.length + 2;
+                  final List<PlaylistModel> userPlaylists = snapshot.data ?? [];
+                  final List<PlaylistModel> displayPlaylists = userPlaylists.take(4).toList();
+                  final int totalCount = displayPlaylists.length + 2;
 
                   return GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: totalCount,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 10,
-                          mainAxisSpacing: 10,
-                          childAspectRatio: 2.8,
-                        ),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                      childAspectRatio: 2.8,
+                    ),
                     itemBuilder: (context, index) {
-                      bool isLiked = index == totalCount - 1;
-                      bool isOther = index == totalCount - 2;
-                      bool isUserPlaylist = !isLiked && !isOther;
+                      final bool isLiked = index == totalCount - 1;
+                      final bool isOther = index == totalCount - 2;
+                      final bool isUserPlaylist = !isLiked && !isOther;
 
-                      String name = isLiked
+                      final String name = isLiked
                           ? "Liked Songs"
                           : (isOther
-                                ? "Other Playlists"
-                                : displayPlaylists[index].name);
+                              ? "Other Playlists"
+                              : displayPlaylists[index].name);
 
-                      String? playlistId = isUserPlaylist
-                          ? displayPlaylists[index].id
-                          : null;
+                      final String? playlistId = isUserPlaylist ? displayPlaylists[index].id : null;
 
                       return GestureDetector(
                         onTap: () {
@@ -159,9 +171,7 @@ class HomeScreen extends StatelessWidget {
                           name,
                           isUserPlaylist
                               ? 'lib/assets/library.svg'
-                              : (isLiked
-                                    ? Icons.favorite
-                                    : Icons.playlist_play),
+                              : (isLiked ? Icons.favorite : Icons.playlist_play),
                           isSvg: isUserPlaylist,
                           isGreen: isLiked,
                         ),
@@ -170,65 +180,88 @@ class HomeScreen extends StatelessWidget {
                   );
                 },
               ),
+
               const SizedBox(height: 32),
 
-              // 3. Made For You Carousel
-              _buildSectionHeader("Made For You"),
+              // 3. CAROUSEL 1: LIVE TRENDING TRACKS ("Made For You")
+              _buildSectionHeader(
+                "Made For You",
+                onSeeAll: () => _openFullPlaylist("Made For You", _trendingTracksFuture),
+              ),
               const SizedBox(height: 16),
               SizedBox(
                 height: 220,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: const [
-                    AlbumCard(
-                      title: "Chill Electronic",
-                      subtitle: "Your weekly mixtape",
-                      bgColor: Color(0xFF2E3B4E),
-                    ),
-                    AlbumCard(
-                      title: "Synthwave Classics",
-                      subtitle: "Retro-futuristic",
-                      bgColor: Color(0xFF4E2E3B),
-                    ),
-                    AlbumCard(
-                      title: "Night Drive",
-                      subtitle: "For the road",
-                      bgColor: Color(0xFF2E4E3B),
-                    ),
-                  ],
+                child: FutureBuilder<List<MusicTrack>>(
+                  future: _trendingTracksFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
+                    }
+                    final tracks = snapshot.data ?? [];
+                    if (tracks.isEmpty) {
+                      return const Center(
+                        child: Text("No trending tracks found", style: TextStyle(color: AppColors.textMuted)),
+                      );
+                    }
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: tracks.length,
+                      itemBuilder: (context, index) {
+                        final track = tracks[index];
+                        return AlbumCard(
+                          title: track.title,
+                          subtitle: track.artist,
+                          imageUrl: track.artworkUrl,
+                          onTap: () => PlayerService().playTrackFromQueue(tracks, index),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
 
               const SizedBox(height: 32),
 
-              // 4. Recently Played Carousel
-              _buildSectionHeader("Recently Played"),
+              // 4. CAROUSEL 2: ELECTRONIC & DANCE TRENDS ("Featured Hits")
+              _buildSectionHeader(
+                "Featured Hits",
+                onSeeAll: () => _openFullPlaylist("Featured Hits", _electronicTracksFuture),
+              ),
               const SizedBox(height: 16),
               SizedBox(
                 height: 220,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  children: const [
-                    AlbumCard(
-                      title: "Analog Dreams",
-                      subtitle: "Neon Voyager",
-                      bgColor: Color(0xFF3F2E4E),
-                    ),
-                    AlbumCard(
-                      title: "Neon Horizon",
-                      subtitle: "Synthwave Syndicate",
-                      bgColor: Color(0xFF4E462E),
-                    ),
-                    AlbumCard(
-                      title: "Desert Synth",
-                      subtitle: "Neon Voyager",
-                      bgColor: Color(0xFF4E462E),
-                    ),
-                  ],
+                child: FutureBuilder<List<MusicTrack>>(
+                  future: _electronicTracksFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: AppColors.primaryGreen));
+                    }
+                    final tracks = snapshot.data ?? [];
+                    if (tracks.isEmpty) {
+                      return const Center(
+                        child: Text("No tracks found", style: TextStyle(color: AppColors.textMuted)),
+                      );
+                    }
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: tracks.length,
+                      itemBuilder: (context, index) {
+                        final track = tracks[index];
+                        return AlbumCard(
+                          title: track.title,
+                          subtitle: track.artist,
+                          imageUrl: track.artworkUrl,
+                          onTap: () => PlayerService().playTrackFromQueue(tracks, index),
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
 
-              const SizedBox(height: 80), // Space for MiniPlayer
+              const SizedBox(height: 130), // Padding so MiniPlayer does not cover the bottom
             ],
           ),
         ),
@@ -236,12 +269,7 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickAccessTile(
-    String title,
-    dynamic iconData, {
-    bool isSvg = false,
-    bool isGreen = false,
-  }) {
+  Widget _buildQuickAccessTile(String title, dynamic iconData, {bool isSvg = false, bool isGreen = false}) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.surfaceDefault,
@@ -251,30 +279,19 @@ class HomeScreen extends StatelessWidget {
         children: [
           const SizedBox(width: 14),
           isSvg
-              ? SvgPicture.asset(
-                  iconData,
+              ? SvgPicture.asset(iconData,
                   width: 24,
-                  colorFilter: const ColorFilter.mode(
-                    AppColors.textPrimary,
-                    BlendMode.srcIn,
-                  ),
-                )
+                  colorFilter: const ColorFilter.mode(AppColors.textPrimary, BlendMode.srcIn))
               : Icon(
-                  iconData == 'favorite' ? Icons.favorite : Icons.playlist_play,
-                  color: isGreen
-                      ? AppColors.primaryGreen
-                      : AppColors.textPrimary,
-                  size: 24,
+                  iconData as IconData,
+                  color: isGreen ? AppColors.primaryGreen : AppColors.textPrimary,
+                  size: 26,
                 ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(color: AppColors.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -284,24 +301,23 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {VoidCallback? onSeeAll}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(color: AppColors.textPrimary, fontSize: 22, fontWeight: FontWeight.bold),
         ),
-        const Text(
-          "See All",
-          style: TextStyle(
-            color: AppColors.primaryGreen,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
+        GestureDetector(
+          onTap: onSeeAll,
+          behavior: HitTestBehavior.opaque,
+          child: const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+            child: Text(
+              "See All",
+              style: TextStyle(color: AppColors.primaryGreen, fontSize: 13, fontWeight: FontWeight.bold),
+            ),
           ),
         ),
       ],

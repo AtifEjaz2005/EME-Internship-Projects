@@ -1,4 +1,6 @@
+import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
+import 'package:spotify_clone/services/audio_handler.dart';
 import '../themes/app_colors.dart';
 import '../services/player_service.dart';
 import '../services/playlist_service.dart';
@@ -9,23 +11,27 @@ class PlaylistDetailScreen extends StatelessWidget {
   final String playlistName;
   final String? playlistId;
   final bool isLikedSongs;
+  final List<MusicTrack>? preloadedTracks;
 
   const PlaylistDetailScreen({
     super.key,
     required this.playlistName,
     this.playlistId,
     this.isLikedSongs = false,
+    this.preloadedTracks,
   });
 
   @override
   Widget build(BuildContext context) {
     final playlistService = PlaylistService();
 
-    final Stream<List<MusicTrack>> songsStream = isLikedSongs
-        ? playlistService.getLikedSongs()
-        : (playlistId != null
-              ? playlistService.getPlaylistSongs(playlistId!)
-              : const Stream.empty());
+    final Stream<List<MusicTrack>> songsStream = preloadedTracks != null
+        ? Stream.value(preloadedTracks!)
+        : (isLikedSongs
+              ? playlistService.getLikedSongs()
+              : (playlistId != null
+                    ? playlistService.getPlaylistSongs(playlistId!)
+                    : const Stream.empty()));
 
     return Scaffold(
       backgroundColor: AppColors.primaryBackground,
@@ -34,9 +40,15 @@ class PlaylistDetailScreen extends StatelessWidget {
         builder: (context, snapshot) {
           final songs = snapshot.data ?? [];
 
+          // DYNAMIC COVER ART: Get the image of the first song in this playlist
+          final String? firstSongCover =
+              (songs.isNotEmpty && songs.first.artworkUrl.isNotEmpty)
+              ? songs.first.artworkUrl
+              : null;
+
           return CustomScrollView(
             slivers: [
-              // 1. HEADER
+              // 1. DYNAMIC HEADER
               SliverAppBar(
                 expandedHeight: 280,
                 pinned: true,
@@ -59,6 +71,8 @@ class PlaylistDetailScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const SizedBox(height: 40),
+
+                        // PLAYLIST COVER ARTWORK (Displays 1st song's artwork)
                         Container(
                           width: 140,
                           height: 140,
@@ -66,15 +80,23 @@ class PlaylistDetailScreen extends StatelessWidget {
                             color: Colors.white10,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: const [
-                              BoxShadow(color: Colors.black45, blurRadius: 20),
+                              BoxShadow(
+                                color: Colors.black54,
+                                blurRadius: 20,
+                                offset: Offset(0, 10),
+                              ),
                             ],
                           ),
-                          child: Icon(
-                            isLikedSongs ? Icons.favorite : Icons.music_note,
-                            size: 70,
-                            color: isLikedSongs
-                                ? AppColors.primaryGreen
-                                : Colors.white,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: firstSongCover != null
+                                ? Image.network(
+                                    firstSongCover,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) =>
+                                        _buildPlaceholderIcon(),
+                                  )
+                                : _buildPlaceholderIcon(),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -112,28 +134,64 @@ class PlaylistDetailScreen extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      // GREEN PLAY BUTTON: Plays the first song in playlist
-                      GestureDetector(
-                        onTap: () {
-                          if (songs.isNotEmpty) {
-                            PlayerService().playTrackFromQueue(songs, 0);
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("No songs to play!"),
-                              ),
-                            );
-                          }
+                      // GREEN PLAY BUTTON: Starts playback with the whole playlist queued
+                      StreamBuilder<PlaybackState>(
+                        stream: audioHandler.playbackState.stream,
+                        builder: (context, playbackSnapshot) {
+                          final bool isEnginePlaying =
+                              playbackSnapshot.data?.playing ?? false;
+
+                          return ValueListenableBuilder<String?>(
+                            valueListenable: PlayerService().currentSongId,
+                            builder: (context, currentId, _) {
+                              // Check if the currently playing track belongs to this playlist
+                              final bool isCurrentPlaylistActive = songs.any(
+                                (s) =>
+                                    s.id == currentId ||
+                                    s.providerTrackId == currentId,
+                              );
+                              final bool isPlayingThis =
+                                  isEnginePlaying && isCurrentPlaylistActive;
+
+                              return GestureDetector(
+                                onTap: () {
+                                  if (songs.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          "No songs to play in this playlist!",
+                                        ),
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  if (isCurrentPlaylistActive) {
+                                    // If already playing this playlist -> toggle pause / resume
+                                    PlayerService().togglePlay();
+                                  } else {
+                                    // If not playing this playlist -> start playing from track 1
+                                    PlayerService().playTrackFromQueue(
+                                      songs,
+                                      0,
+                                    );
+                                  }
+                                },
+                                child: CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: AppColors.primaryGreen,
+                                  child: Icon(
+                                    isPlayingThis
+                                        ? Icons.pause_rounded
+                                        : Icons.play_arrow_rounded,
+                                    color: Colors.black,
+                                    size: 34,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
                         },
-                        child: CircleAvatar(
-                          radius: 26,
-                          backgroundColor: AppColors.primaryGreen,
-                          child: const Icon(
-                            Icons.play_arrow_rounded,
-                            color: Colors.black,
-                            size: 34,
-                          ),
-                        ),
                       ),
                     ],
                   ),
@@ -185,7 +243,7 @@ class PlaylistDetailScreen extends StatelessWidget {
                                 width: 48,
                                 height: 48,
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, _, _) => Container(
+                                errorBuilder: (_, __, ___) => Container(
                                   width: 48,
                                   height: 48,
                                   color: Colors.white10,
@@ -224,7 +282,6 @@ class PlaylistDetailScreen extends StatelessWidget {
                           fontSize: 12,
                         ),
                       ),
-                      // 3 VERTICAL DOTS: Opens remove/add options
                       trailing: IconButton(
                         icon: const Icon(
                           Icons.more_vert,
@@ -250,6 +307,17 @@ class PlaylistDetailScreen extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  // Fallback icon widget if the playlist has no songs yet
+  Widget _buildPlaceholderIcon() {
+    return Center(
+      child: Icon(
+        isLikedSongs ? Icons.favorite : Icons.music_note,
+        size: 70,
+        color: isLikedSongs ? AppColors.primaryGreen : Colors.white,
       ),
     );
   }

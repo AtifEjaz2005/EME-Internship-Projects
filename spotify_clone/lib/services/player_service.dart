@@ -49,6 +49,14 @@ class PlayerService {
     currentImageUrl.value = track.artworkUrl;
     miniPlayerBgColor.value = MiniPlayerColor.getNewColor();
 
+    // Preserve the queue if this track is already in it
+    if (currentQueue.isEmpty || !currentQueue.contains(track)) {
+      currentQueue = [track];
+      currentQueueIndex = 0;
+    } else {
+      currentQueueIndex = currentQueue.indexOf(track);
+    }
+
     try {
       String? streamUrl;
       if (track.provider == 'audius') {
@@ -102,7 +110,6 @@ class PlayerService {
     if (currentQueue.isEmpty) return;
 
     if (isShuffle.value && currentQueue.length > 1) {
-      // Pick random track different from current
       int nextIndex;
       do {
         nextIndex = Random().nextInt(currentQueue.length);
@@ -112,7 +119,6 @@ class PlayerService {
       if (currentQueueIndex < currentQueue.length - 1) {
         currentQueueIndex++;
       } else {
-        // End of queue reached: loop to start if repeat is enabled, otherwise stop
         if (loopMode.value == LoopMode.all) {
           currentQueueIndex = 0;
         } else {
@@ -130,7 +136,6 @@ class PlayerService {
 
     final currentPosition = audioHandler.playbackState.value.position;
     if (currentPosition.inSeconds > 3) {
-      // Restart current track
       seek(Duration.zero);
     } else if (currentQueueIndex > 0) {
       currentQueueIndex--;

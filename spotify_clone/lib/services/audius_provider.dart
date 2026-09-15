@@ -36,6 +36,41 @@ class AudiusProvider implements MusicProvider {
     return _cachedNode!;
   }
 
+  Future<List<MusicTrack>> getTrendingTracks({String? genre, int limit = 10}) async {
+    final node = await _getNode();
+
+    // Build trending URL with optional genre filter
+    String url = "$node/v1/tracks/trending?app_name=$_appName&limit=$limit";
+    if (genre != null && genre.isNotEmpty) {
+      url += "&genre=${Uri.encodeComponent(genre)}";
+    }
+
+    try {
+      final response = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = json.decode(response.body);
+        final List data = body['data'] ?? [];
+
+        return data.map((json) => MusicTrack(
+          id: json['id']?.toString() ?? '',
+          title: json['title'] ?? 'Unknown Track',
+          artist: json['user']?['name'] ?? 'Unknown Artist',
+          artworkUrl: json['artwork']?['480x480'] ?? json['artwork']?['150x150'] ?? '',
+          provider: 'audius',
+          providerTrackId: json['id']?.toString() ?? '',
+          duration: Duration(seconds: json['duration'] ?? 0),
+        )).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint("Audius Trending Error: $e");
+      return [];
+    }
+  }
+
   @override
   Future<List<MusicTrack>> search(String query) async {
     final cleanQuery = query.trim();
