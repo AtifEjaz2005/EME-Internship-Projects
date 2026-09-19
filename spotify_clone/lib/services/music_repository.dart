@@ -1,26 +1,35 @@
 import '../models/music_track.dart';
 import 'saavn_provider.dart';
 import 'audius_provider.dart';
+import 'soundcloud_provider.dart'; // ADDED
 
 class MusicRepository {
   static final SaavnProvider _saavn = SaavnProvider();
+  static final SoundCloudProvider _soundCloud = SoundCloudProvider(); // ADDED
   static final AudiusProvider _audius = AudiusProvider();
 
-  // Search both libraries in parallel
+  // Search all providers in parallel
   static Future<List<MusicTrack>> search(String query) async {
-    if (query.trim().isEmpty) return [];
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return [];
 
     try {
       final results = await Future.wait([
-        _saavn.search(query),  // Mainstream hits (Punjabi, Bollywood, Global Pop)
-        _audius.search(query), // Indie, EDM, Remixes
+        _saavn.search(cleanQuery),       // 1. Saavn: Mainstream Punjabi, Bollywood, Pop
+        _soundCloud.search(cleanQuery),  // 2. SoundCloud: Persian, Iranian, Global, Rap
+        _audius.search(cleanQuery),      // 3. Audius: Indie, Electronic, Remixes
       ]);
 
       final saavnTracks = results[0];
-      final audiusTracks = results[1];
+      final soundCloudTracks = results[1];
+      final audiusTracks = results[2];
 
-      // Saavn tracks come first (higher relevance for mainstream titles), followed by Audius
-      return [...saavnTracks, ...audiusTracks];
+      // Merge: Saavn + SoundCloud first for maximum relevance, then Audius
+      return [
+        ...saavnTracks,
+        ...soundCloudTracks,
+        ...audiusTracks,
+      ];
     } catch (e) {
       return [];
     }
@@ -30,6 +39,8 @@ class MusicRepository {
   static Future<String?> resolvePlayback(MusicTrack track) async {
     if (track.provider == 'saavn') {
       return await _saavn.resolvePlayback(track);
+    } else if (track.provider == 'soundcloud') {
+      return await _soundCloud.resolvePlayback(track); // ADDED
     } else if (track.provider == 'audius') {
       return await _audius.resolvePlayback(track);
     }
