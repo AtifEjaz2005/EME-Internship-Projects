@@ -8,6 +8,7 @@ import '../widgets/mini_player_color.dart';
 import '../models/music_track.dart';
 import 'audius_provider.dart';
 import 'audio_handler.dart';
+import 'music_repository.dart';
 
 class PlayerService {
   static final PlayerService _instance = PlayerService._internal();
@@ -138,12 +139,7 @@ class PlayerService {
     }
 
     try {
-      String? streamUrl;
-      if (track.provider == 'audius') {
-        streamUrl = await AudiusProvider().resolvePlayback(track);
-      } else {
-        streamUrl = track.audioUrl;
-      }
+      String? streamUrl = await MusicRepository.resolvePlayback(track);
 
       if (streamUrl != null) {
         await audioHandler.playMediaItem(

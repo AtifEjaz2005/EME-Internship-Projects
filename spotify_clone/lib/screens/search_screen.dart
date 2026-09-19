@@ -4,9 +4,10 @@ import 'package:spotify_clone/services/playlist_service.dart';
 import '../themes/app_colors.dart';
 import '../widgets/category_card.dart';
 import '../services/player_service.dart';
-import '../services/audius_provider.dart';
+import '../services/music_repository.dart';
 import '../models/music_track.dart';
-import 'playlist_detail_screen.dart'; // IMPORTED for full playlist navigation
+import 'playlist_detail_screen.dart';
+import '../services/audius_provider.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -50,7 +51,10 @@ class _SearchScreenState extends State<SearchScreen> {
     );
 
     try {
-      final tracks = await AudiusProvider().getTrendingTracks(genre: genre, limit: 20);
+      final tracks = await AudiusProvider().getTrendingTracks(
+        genre: genre,
+        limit: 20,
+      );
       if (mounted) {
         Navigator.pop(context); // Dismiss loading
         if (tracks.isNotEmpty) {
@@ -64,9 +68,9 @@ class _SearchScreenState extends State<SearchScreen> {
             ),
           );
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("No tracks found for $title")),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("No tracks found for $title")));
         }
       }
     } catch (e) {
@@ -92,7 +96,11 @@ class _SearchScreenState extends State<SearchScreen> {
               const SizedBox(height: 20),
               const Text(
                 "Search",
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -136,7 +144,11 @@ class _SearchScreenState extends State<SearchScreen> {
       children: [
         const Text(
           "Browse all",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         const SizedBox(height: 16),
         Expanded(
@@ -149,7 +161,8 @@ class _SearchScreenState extends State<SearchScreen> {
               CategoryCard(
                 title: "Top Charts",
                 color: const Color(0xFF8D67AB),
-                onTap: () => _openCategory("Top Charts", null), // Global top trending
+                onTap: () =>
+                    _openCategory("Top Charts", null), // Global top trending
               ),
               CategoryCard(
                 title: "Electronic",
@@ -195,15 +208,20 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Widget _buildSearchResults() {
     return FutureBuilder<List<MusicTrack>>(
-      future: AudiusProvider().search(_searchQuery),
+      future: MusicRepository.search(_searchQuery),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: Colors.white));
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
         }
 
         if (snapshot.hasError) {
           return const Center(
-            child: Text("Error searching tracks", style: TextStyle(color: Colors.redAccent)),
+            child: Text(
+              "Error searching tracks",
+              style: TextStyle(color: Colors.redAccent),
+            ),
           );
         }
 
@@ -211,7 +229,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
         if (results.isEmpty) {
           return const Center(
-            child: Text("No songs found", style: TextStyle(color: AppColors.textMuted)),
+            child: Text(
+              "No songs found",
+              style: TextStyle(color: AppColors.textMuted),
+            ),
           );
         }
 
@@ -237,10 +258,13 @@ class _SearchScreenState extends State<SearchScreen> {
                 track.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               subtitle: Text(
-                "${track.artist} • Audius",
+                "${track.artist} • ${track.provider.toUpperCase()}",
                 style: const TextStyle(color: AppColors.textMuted),
               ),
               trailing: IconButton(
