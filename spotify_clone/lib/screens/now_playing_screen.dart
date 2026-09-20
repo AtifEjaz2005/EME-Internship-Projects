@@ -1,10 +1,11 @@
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
-import 'package:just_audio/just_audio.dart'; // Add this import
+import 'package:just_audio/just_audio.dart';
 import '../themes/app_colors.dart';
 import '../services/player_service.dart';
 import '../widgets/like_button.dart';
 import '../models/music_track.dart';
+import '../widgets/lyrics_sheet.dart';
 
 class NowPlayingScreen extends StatefulWidget {
   // Changed to StatefulWidget for flicker logic
@@ -303,21 +304,39 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
             const Spacer(flex: 2),
 
             // 5. LYRICS BUTTON
-            const Text(
-              "LYRICS",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-                fontSize: 12,
-              ),
-            ),
-            const Icon(
-              Icons.keyboard_arrow_up_rounded,
-              color: Colors.white,
-              size: 30,
-            ),
-            const SizedBox(height: 20),
+            GestureDetector(
+  onTap: () {
+    final title = player.currentSongTitle.value ?? '';
+    final artist = player.currentArtist.value ?? '';
+    if (title.isNotEmpty) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => LyricsSheet(title: title, artist: artist),
+      );
+    }
+  },
+  behavior: HitTestBehavior.opaque,
+  child: const Padding(
+    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 24.0),
+    child: Column(
+      children: [
+        Text(
+          "LYRICS",
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 2,
+            fontSize: 12,
+          ),
+        ),
+        Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white, size: 28),
+      ],
+    ),
+  ),
+),
+const SizedBox(height: 12),
           ],
         ),
       ),
